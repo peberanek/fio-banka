@@ -1,0 +1,246 @@
+{
+    "accountStatement": {
+        "info": {
+            "accountId": "2000000000",
+            "bankId": "2010",
+            "currency": "CZK",
+            "iban": "CZ1000000000002000000000",
+            "bic": "FIOBCZPPXXX",
+            "openingBalance": 1000.99,
+            "closingBalance": 2000.10,
+            "dateStart": "2023-01-01+0100",
+            "dateEnd": "2023-01-03+0100",
+            "yearList": null,
+            "idList": null,
+            "idFrom": 10000000000,
+            "idTo": 10000000002,
+            "idLastDownload": null
+        },
+        "transactionList": {
+            "transaction": [
+                {
+                    "column22": {
+                        "value": 10000000000,
+                        "name": "ID pohybu",
+                        "id": 22
+                    },
+                    "column0": {
+                        "value": "2023-01-01+0100",
+                        "name": "Datum",
+                        "id": 0
+                    },
+                    "column1": {
+                        "value": 2000.0,
+                        "name": "Objem",
+                        "id": 1
+                    },
+                    "column14": {
+                        "value": "CZK",
+                        "name": "Měna",
+                        "id": 14
+                    },
+                    "column2": null,
+                    "column10": {
+                        "value": "",
+                        "name": "Název protiúčtu",
+                        "id": 10
+                    },
+                    "column3": null,
+                    "column12": null,
+                    "column4": null,
+                    "column5": {
+                        "value": "1000",
+                        "name": "VS",
+                        "id": 5
+                    },
+                    "column6": null,
+                    "column7": {
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "name": "Uživatelská identifikace",
+                        "id": 7
+                    },
+                    "column16": {
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "name": "Zpráva pro příjemce",
+                        "id": 16
+                    },
+                    "column8": {
+                        "value": "Platba kartou",
+                        "name": "Typ",
+                        "id": 8
+                    },
+                    "column9": {
+                        "value": "Novák, Jan",
+                        "name": "Provedl",
+                        "id": 9
+                    },
+                    "column18": null,
+                    "column25": {
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "name": "Komentář",
+                        "id": 25
+                    },
+                    "column26": null,
+                    "column17": {
+                        "value": 30000000000,
+                        "name": "ID pokynu",
+                        "id": 17
+                    },
+                    "column27": null
+                },
+                {
+                    "column22": {
+                        "value": 10000000001,
+                        "name": "ID pohybu",
+                        "id": 22
+                    },
+                    "column0": {
+                        "value": "2023-01-02+0100",
+                        "name": "Datum",
+                        "id": 0
+                    },
+                    "column1": {
+                        "value": -1500.89,
+                        "name": "Objem",
+                        "id": 1
+                    },
+                    "column14": {
+                        "value": "CZK",
+                        "name": "Měna",
+                        "id": 14
+                    },
+                    "column2": {
+                        "value": "9876543210",
+                        "name": "Protiúčet",
+                        "id": 2
+                    },
+                    "column10": {
+                        "value": "",
+                        "name": "Název protiúčtu",
+                        "id": 10
+                    },
+                    "column3": {
+                        "value": "0800",
+                        "name": "Kód banky",
+                        "id": 3
+                    },
+                    "column12": {
+                        "value": "Česká spořitelna, a.s.",
+                        "name": "Název banky",
+                        "id": 12
+                    },
+                    "column4": {
+                        "value": "0558",
+                        "name": "KS",
+                        "id": 4
+                    },
+                    "column5": {
+                        "value": "0001",
+                        "name": "VS",
+                        "id": 5
+                    },
+                    "column6": {
+                        "value": "0002",
+                        "name": "SS",
+                        "id": 6
+                    },
+                    "column7": null,
+                    "column16": null,
+                    "column8": {
+                        "value": "Okamžitá odchozí platba",
+                        "name": "Typ",
+                        "id": 8
+                    },
+                    "column9": {
+                        "value": "Novák, Jan",
+                        "name": "Provedl",
+                        "id": 9
+                    },
+                    "column18": null,
+                    "column25": null,
+                    "column26": null,
+                    "column17": {
+                        "value": 30000000001,
+                        "name": "ID pokynu",
+                        "id": 17
+                    },
+                    "column27": null
+                },
+                {
+                    "column22": {
+                        "value": 10000000002,
+                        "name": "ID pohybu",
+                        "id": 22
+                    },
+                    "column0": {
+                        "value": "2023-01-03+0100",
+                        "name": "Datum",
+                        "id": 0
+                    },
+                    "column1": {
+                        "value": 500.0,
+                        "name": "Objem",
+                        "id": 1
+                    },
+                    "column14": {
+                        "value": "CZK",
+                        "name": "Měna",
+                        "id": 14
+                    },
+                    "column2": {
+                        "value": "2345678901",
+                        "name": "Protiúčet",
+                        "id": 2
+                    },
+                    "column10": {
+                        "value": "Pavel, Žák",
+                        "name": "Název protiúčtu",
+                        "id": 10
+                    },
+                    "column3": {
+                        "value": "2010",
+                        "name": "Kód banky",
+                        "id": 3
+                    },
+                    "column12": {
+                        "value": "Fio banka, a.s.",
+                        "name": "Název banky",
+                        "id": 12
+                    },
+                    "column4": null,
+                    "column5": null,
+                    "column6": null,
+                    "column7": null,
+                    "column16": null,
+                    "column8": {
+                        "value": "Příjem převodem uvnitř banky",
+                        "name": "Typ",
+                        "id": 8
+                    },
+                    "column9": null,
+                    "column18": {
+                        "value": "test specification",
+                        "name": "Upřesnění",
+                        "id": 18
+                    },
+                    "column25": null,
+                    "column26": {
+                        "value": "TESTBICXXXX",
+                        "name": "BIC",
+                        "id": 26
+                    },
+                    "column17": {
+                        "value": 30000000002,
+                        "name": "ID pokynu",
+                        "id": 17
+                    },
+                    "column27": {
+                        "value": "test payer reference",
+                        "name": "Reference plátce",
+                        "id": 27
+                    }
+                }
+            ]
+        }
+    }
+}

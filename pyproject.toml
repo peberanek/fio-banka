@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fio_banka"
+version = "1.0.0"
+authors = [
+  { name = "Petr Beranek", email = "petrberanek.mail@gmail.com" },
+]
+description = "Thin wrapper for Fio Banka, a.s. API"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+keywords = ["finance", "fio", "bank", "api", "czech", "wrapper"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Programming Language :: Python :: 3.10",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Communications",
+  "Topic :: Office/Business :: Financial",
+]
+dependencies = [
+  "requests==2.31.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/peberanek/fio-banka"
+
+[project.optional-dependencies]
+development = [
+  "pre-commit==3.3.1",
+  "pytest==7.3.1",
+  "pytest-cov==4.1.0",
+]
+distribution = [
+  "build==0.10.0",
+  "twine==4.0.2",
+]
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py"]
