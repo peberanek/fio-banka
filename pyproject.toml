@@ -40,5 +40,45 @@ distribution = [
   "twine==4.0.2",
 ]
 
+[tool.ruff]
+line-length = 100
+# https://beta.ruff.rs/docs/rules/
+select = [
+  "F",    # pyflakes
+  "E",    # pycodestyle
+  "C90",  # mccabe
+  "I",    # isort
+  "N",    # pep8-naming
+  "UP",   # pyupgrade
+  "YTT",  # flake8-2020
+  "BLE",  # flake8-blind-except
+  "FBT",  # flake8-boolean-trap
+  "B",    # flake8-bugbear
+  "A",    # flake8-builtins
+  "COM",  # flake8-commas
+  "C4",   # flake8-comprehensions
+  "DTZ",  # flake8-datetimez
+  "T10",  # flake8-debugger
+  "INP",  # flake8-no-pep420
+  "PIE",  # flake8-pie
+  "T20",  # flake8-print
+  "PT",   # flake8-pytest-style
+  "Q",    # flake8-quotes
+  "RSE",  # flake8-raise
+  "RET",  # flake8-return
+  "SLF",  # flake8-self
+  "SIM",  # flake8-simplify
+  "ARG",  # flake8-unused-arguments
+  "PTH",  # flake8-use-pathlib
+  "PGH",  # pygrep-hooks
+  "PL",   # pylint
+  "TRY",  # tryceptors
+  "FLY",  # flynt
+  "RUF",  # Ruff-specific rules
+]
+ignore = ["TRY003"]
+# These may break temporarily commented-out code
+unfixable = ["F401", "F841"]
+
 [tool.bandit.assert_used]
 skips = ["*/test_*.py"]

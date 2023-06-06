@@ -1,3 +1,4 @@
+# ruff: noqa: SLF001
 import os
 from datetime import date
 from decimal import Decimal
@@ -6,13 +7,20 @@ from pathlib import Path
 import pytest
 import requests
 
-from fio_banka import Account, AccountInfo
+from fio_banka import (
+    Account,
+    AccountInfo,
+    DataError,
+    RequestError,
+    Transaction,
+    get_account_info,
+    get_transactions,
+    str_to_date,
+)
 from fio_banka import AccountStatementFmt as ASFmt
-from fio_banka import DataError, RequestError, Transaction
 from fio_banka import TransactionsFmt as TFmt
-from fio_banka import get_account_info, get_transactions, str_to_date
 
-THIS_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
+THIS_DIR = Path(os.path.realpath(__file__)).parent
 
 
 class MockResponse:
@@ -30,11 +38,11 @@ class MockResponse:
 
 
 # Prevent real API calls by autousing this fixture.
-@pytest.fixture(name="mock_response", autouse=True)
-def _mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
+@pytest.fixture(autouse=True)
+def mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
     response = MockResponse()
 
-    def mock_get(*args, **kwargs):
+    def mock_get(*args, **kwargs):  # noqa: ARG001
         response.url = args[0]
         return response
 
@@ -42,15 +50,15 @@ def _mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
     return response
 
 
-@pytest.fixture(name="transactions")
-def _transactions():
+@pytest.fixture()
+def transactions():
     with (THIS_DIR / "transactions.json").open(encoding="utf-8") as file:
         return file.read()
 
 
 def test_str_to_date():
     assert str_to_date("2023-01-01+0100") == date(2023, 1, 1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid isoformat"):
         str_to_date("2023-01")
 
 
@@ -80,7 +88,7 @@ def test_get_account_info(transactions):
 def test_get_transactions(transactions):
     txns = list(get_transactions(transactions))
     # Check there are 3 unique transactions
-    assert len({txn.transaction_id for txn in txns}) == len(txns) == 3
+    assert len({txn.transaction_id for txn in txns}) == len(txns) == 3  # noqa: PLR2004
     for txn in txns:
         match txn.transaction_id:
             case "10000000000":
@@ -163,11 +171,11 @@ def test_get_transactions(transactions):
 class TestAccount:
     BASE_URL = "https://www.fio.cz/ib_api/rest"
 
-    @pytest.fixture(name="account")
+    @pytest.fixture()
     @staticmethod
-    def _account() -> Account:
+    def account() -> Account:
         return Account(
-            "testKeyXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36bG"
+            "testKeyXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36bG",
         )
 
     @staticmethod
@@ -202,7 +210,8 @@ class TestAccount:
         )
 
     @pytest.mark.parametrize(
-        "fmt,response_attr", [(ASFmt.PDF, "content"), (ASFmt.XML, "text")]
+        ("fmt", "response_attr"),
+        [(ASFmt.PDF, "content"), (ASFmt.XML, "text")],
     )
     def test_by_id(
         self,

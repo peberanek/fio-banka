@@ -113,7 +113,7 @@ class Transaction(NamedTuple):
     ss: OptionalStr
     user_identification: OptionalStr
     recipient_message: OptionalStr
-    type: OptionalStr
+    type: OptionalStr  # noqa: A003
     executor: OptionalStr
     specification: OptionalStr
     comment: OptionalStr
@@ -193,7 +193,7 @@ def get_account_info(data: str) -> AccountInfo:
     try:
         info = _parse_data(data)["accountStatement"]["info"]
     except KeyError as exc:
-        raise ValueError(f"Missing key in data: {exc}")
+        raise ValueError(f"Missing key in data: {exc}") from exc
     return AccountInfo(
         account_id=info["accountId"],
         bank_id=info["bankId"],
@@ -237,7 +237,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
     try:
         txns = _parse_data(data)["accountStatement"]["transactionList"]["transaction"]
     except KeyError as exc:
-        raise ValueError(f"Missing key in data: {exc}")
+        raise ValueError(f"Missing key in data: {exc}") from exc
     for txn in txns:
         yield Transaction(
             transaction_id=get_value(txn, "column22", coerce=str),  # str
@@ -288,7 +288,8 @@ class Account:
 
     def _request(self, url: str, fmt: Fmt | None) -> str | bytes:
         response: requests.Response = requests.get(
-            self._BASE_URL + url, timeout=self._timeout
+            self._BASE_URL + url,
+            timeout=self._timeout,
         )
         try:
             response.raise_for_status()
@@ -324,7 +325,7 @@ class Account:
         )
         return _check_type(self._request(url, fmt), str)
 
-    def by_id(self, year: int, id: int, fmt: AccountStatementFmt) -> str | bytes:
+    def by_id(self, year: int, _id: int, fmt: AccountStatementFmt) -> str | bytes:
         """Return official account statement.
 
         Args:
@@ -335,7 +336,7 @@ class Account:
         Returns:
             str | bytes: bytes when the format is PDF, str otherwise
         """
-        url = f"/by-id/{self._token}/{year}/{id}/transactions.{fmt}"
+        url = f"/by-id/{self._token}/{year}/{_id}/transactions.{fmt}"
         return self._request(url, fmt)
 
     def last(self, fmt: TransactionsFmt) -> str:
@@ -354,7 +355,7 @@ class Account:
         url = f"/last/{self._token}/transactions.{fmt}"
         return _check_type(self._request(url, fmt), str)
 
-    def set_last_id(self, id: int) -> None:
+    def set_last_id(self, _id: int) -> None:
         """Set ID of the last successfully downloaded transaction.
 
         Args:
@@ -363,7 +364,7 @@ class Account:
         Raises:
             RequestError: raised when a server or a client error occurs
         """
-        url = f"/set-last-id/{self._token}/{id}/"
+        url = f"/set-last-id/{self._token}/{_id}/"
         self._request(url, None)
 
     def set_last_date(self, date: date) -> None:
