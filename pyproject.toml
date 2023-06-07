@@ -40,6 +40,10 @@ distribution = [
   "twine==4.0.2",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=fio_banka --cov-report term-missing"
+
 [tool.ruff]
 line-length = 100
 # https://beta.ruff.rs/docs/rules/

@@ -7,11 +7,6 @@ linters:
 linters-all-files: PRECOMMIT_ARGS = --all-files
 linters-all-files: linters
 
-.PHONY: tests
-tests:
-	pytest --version
-	pytest tests/ --cov=fio_banka --cov-report term-missing
-
 .PHONY: venv
 venv: pip_install = python3 -m pip install
 venv: venv_dir = ./venv

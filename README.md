@@ -107,7 +107,7 @@ pre-commit install
 
 Run tests:
 ```
-make tests
+pytest
 ```
 
 ## License
