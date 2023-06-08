@@ -11,13 +11,13 @@ authors = [
 description = "Thin wrapper for Fio Banka, a.s. API"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["finance", "fio", "bank", "api", "czech", "wrapper"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Financial and Insurance Industry",
-  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
   "Topic :: Communications",
   "Topic :: Office/Business :: Financial",
