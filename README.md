@@ -17,7 +17,7 @@ Currently, merchant transaction report and order upload are not implemented. Fee
 ## Installation
 
 ```
-python3 -m pip install git+https://github.com/peberanek/fio-banka.git
+pip install fio-banka
 ```
 
 ## Usage
