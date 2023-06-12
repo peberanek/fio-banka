@@ -1,4 +1,4 @@
-# Fio Banka API Wrapper
+# Fio Banka API
 
 [![image](https://img.shields.io/pypi/v/fio-banka)](https://pypi.org/project/fio-banka/)
 [![image](https://img.shields.io/pypi/l/fio-banka)](https://pypi.org/project/fio-banka/)
