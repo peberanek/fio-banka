@@ -1,5 +1,8 @@
 # Fio Banka API Wrapper
 
+[![image](https://img.shields.io/pypi/v/fio-banka)](https://pypi.org/project/fio-banka/)
+[![image](https://img.shields.io/pypi/l/fio-banka)](https://pypi.org/project/fio-banka/)
+[![image](https://img.shields.io/pypi/pyversions/fio-banka)](https://pypi.org/project/fio-banka/)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/peberanek/fio-banka/main.svg)](https://results.pre-commit.ci/latest/github/peberanek/fio-banka/main)
 
 Thin wrapper for [Fio Banka, a.s. API](https://www.fio.cz/bank-services/internetbanking-api). Inspired by Honza Javorek's [fiobank](https://github.com/honzajavorek/fiobank).

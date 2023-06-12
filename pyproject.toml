@@ -17,7 +17,7 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Financial and Insurance Industry",
-  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
   "License :: OSI Approved :: MIT License",
   "Topic :: Communications",
   "Topic :: Office/Business :: Financial",
