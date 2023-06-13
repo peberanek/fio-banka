@@ -33,3 +33,7 @@ repos:
     hooks:
     - id: mypy
       additional_dependencies: [types-requests==2.31.0.0]
+  - repo: https://github.com/regebro/pyroma
+    rev: "4.2"
+    hooks:
+    - id: pyroma
