@@ -30,7 +30,7 @@ dependencies = [
 Homepage = "https://github.com/peberanek/fio-banka"
 
 [project.optional-dependencies]
-development = [
+devel = [
   "pre-commit>=3.3.1,<4.0",
   "pytest>=7.3.1,<8.0",
   "pytest-cov>=4.1.0,<5.0",
