@@ -28,26 +28,21 @@ pip install fio-banka
 
 ```python
 >>> from datetime import date
->>> from fio_banka import Account, TransactionsFmt
+>>> from fio_banka
 
->>> account = Account("<your-token>")
->>> fmt = TransactionsFmt.JSON
+>>> account = fio_banka.Account("<your-token>")
+>>> fmt = fio_banka.TransactionsFmt.JSON
 >>> account.periods(date(2023, 1, 1), date(2023, 1, 2), fmt)
 '{"accountStatement":{"info":{"accountId": ... '
 
 >>> try:
 >>>     account.last(fmt)
->>> except RequestError as exc:
->>>     print(f"'{exc}'")
->>>     print(exc.status_code)
-'409 Client Error:  for url: https://www.fio.cz/ib_api/rest/last/TOKEN_VALUE_IS_HIDDEN/transactions.json'
-409
-```
+>>> except fio_banka.RequestError as exc:
+>>>     print(exc)
+Exceeded time limit (1 request per 30s).
 
-We hit request time limit: 1 request per token per 30 seconds. Let's be a good user.
-```python
 >>> import time
->>> time.sleep(account.REQUEST_TIMELIMIT)
+>>> time.sleep(fio_banka.REQUEST_TIMELIMIT)
 >>> data = account.last(fmt)
 >>> data
 '{"accountStatement":{"info":{"accountId": ... '
@@ -55,8 +50,7 @@ We hit request time limit: 1 request per token per 30 seconds. Let's be a good u
 
 Data extraction (make sure data are downloaded as *JSON*):
 ```python
->>> from fio_banka import get_account_info, get_transactions
->>> get_account_info(data)
+>>> fio_banka.get_account_info(data)
 AccountInfo(
     account_id='2000000000',
     bank_id='2010',
@@ -73,7 +67,7 @@ AccountInfo(
     id_to=10000000002,
     id_last_download=None
 )
->>> list(get_transactions(data))[0]
+>>> list(fio_banka.get_transactions(data))[0]
 Transaction(
     transaction_id='10000000000',
     date=datetime.date(2023, 1, 1),

@@ -1,4 +1,7 @@
 # ruff: noqa: SLF001
+# TODO: Test custom exceptions are raised. Improve `test__request_exceptions`.
+# TODO: Test that the Account token is not leaked in messages of the custom
+#   exceptions.
 import os
 from datetime import date
 from decimal import Decimal
@@ -21,6 +24,7 @@ from fio_banka import AccountStatementFmt as ASFmt
 from fio_banka import TransactionsFmt as TFmt
 
 THIS_DIR = Path(os.path.realpath(__file__)).parent
+Error = tuple[requests.exceptions.RequestException, str] | None
 
 
 class MockResponse:
@@ -28,21 +32,25 @@ class MockResponse:
         self.content: bytes = b"content"
         self.text: str = "text"
         self.url: str | None = None
-        self.error: tuple[str, int] | None = None
-        self.status_code = 200
+        self.error: Error = None
 
     def raise_for_status(self) -> None:
-        if self.error is not None:
-            self.status_code = self.error[1]
-            raise requests.HTTPError(self.error[0], response=self)
+        pass
 
 
 # Prevent real API calls by autousing this fixture.
 @pytest.fixture(autouse=True)
-def mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
+def mock_response(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> MockResponse:
+    param: Error = getattr(request, "param", None)
     response = MockResponse()
+    response.error = param
 
     def mock_get(*args, **kwargs):  # noqa: ARG001
+        if param is not None:
+            raise param[0](param[1])
         response.url = args[0]
         return response
 
@@ -192,12 +200,15 @@ class TestAccount:
         assert account._request(url, ASFmt.PDF) == mock_response.content
         assert account._request(url, ASFmt.GPC) == mock_response.text
 
-        error_msg = "Not found"
-        error_code = 404
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account._request(url, None)
-        assert excinfo.value.status_code == error_code
+    @pytest.mark.parametrize(
+        "mock_response",
+        [(requests.Timeout, "Timeout error msg")],
+        indirect=True,
+    )
+    def test__request_exceptions(self, mock_response: MockResponse, account: Account):
+        assert mock_response.error is not None
+        with pytest.raises(RequestError, match=mock_response.error[1]):
+            account._request("/foo", None)
 
     def test_periods(self, mock_response: MockResponse, account: Account):
         from_date = date(2023, 1, 1)
@@ -256,14 +267,6 @@ class TestAccount:
         assert mock_response.url == (
             f"{self.BASE_URL}/lastStatement/{account._token}/statement"
         )
-
-    def test_request_error(self, mock_response: MockResponse, account: Account):
-        error_msg = "Invalid token"
-        error_code = 500
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account.last(TFmt.JSON)
-        assert excinfo.value.status_code == error_code
 
     def test_data_error(self, mock_response: MockResponse, account: Account):
         mock_response.text = b"bytes"  # type: ignore[assignment]
