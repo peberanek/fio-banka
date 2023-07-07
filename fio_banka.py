@@ -29,7 +29,7 @@ Basic usage:
         date=datetime.date(2023, 1, 1),
         amount=Decimal('2000.0'),
         currency='CZK',
-        account=None,
+        account_id=None,
         ...
     )
 """
@@ -104,7 +104,7 @@ class Transaction(NamedTuple):
     date: date
     amount: Decimal
     currency: str
-    account: OptionalStr
+    account_id: OptionalStr
     account_name: OptionalStr
     bank_id: OptionalStr
     bank_name: OptionalStr
@@ -112,7 +112,7 @@ class Transaction(NamedTuple):
     vs: OptionalStr
     ss: OptionalStr
     user_identification: OptionalStr
-    recipient_message: OptionalStr
+    remittance_info: OptionalStr
     type: OptionalStr  # noqa: A003
     executor: OptionalStr
     specification: OptionalStr
@@ -244,7 +244,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             date=get_value(txn, "column0", coerce=str_to_date),
             amount=get_value(txn, "column1"),
             currency=get_value(txn, "column14"),
-            account=get_value(txn, "column2"),
+            account_id=get_value(txn, "column2"),
             account_name=get_value(txn, "column10"),
             bank_id=get_value(txn, "column3"),
             bank_name=get_value(txn, "column12"),
@@ -252,7 +252,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             vs=get_value(txn, "column5"),
             ss=get_value(txn, "column6"),
             user_identification=get_value(txn, "column7"),
-            recipient_message=get_value(txn, "column16"),
+            remittance_info=get_value(txn, "column16"),
             type=get_value(txn, "column8"),
             executor=get_value(txn, "column9"),
             specification=get_value(txn, "column18"),

@@ -79,7 +79,7 @@ Transaction(
     date=datetime.date(2023, 1, 1),
     amount=Decimal('2000.0'),
     currency='CZK',
-    account=None,
+    account_id=None,
     account_name='',
     bank_id=None,
     bank_name=None,
@@ -87,7 +87,7 @@ Transaction(
     vs='1000',
     ss=None,
     user_identification='Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK',
-    recipient_message='Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK',
+    remittance_info='Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK',  # Zprava pro prijemce
     type='Platba kartou',
     executor='Novák, Jan',
     specification=None,
