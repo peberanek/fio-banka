@@ -23,7 +23,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-  "requests>=2.31.0,<3.0",
+  "requests>=2.31.0,<3.0",  # manually sync with mypy deps in .pre-commit-config.yaml
 ]
 
 [project.urls]
@@ -34,6 +34,7 @@ devel = [
   "pre-commit>=3.3.1,<4.0",
   "pytest>=7.3.1,<8.0",
   "pytest-cov>=4.1.0,<5.0",
+  "types-requests>=2.31.0.0,<3",
 ]
 
 [tool.pytest.ini_options]
