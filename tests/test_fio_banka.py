@@ -1,4 +1,7 @@
 # ruff: noqa: SLF001
+# TODO: Test custom exceptions are raised. Improve `test__request_exceptions`.
+# TODO: Test that the Account token is not leaked in messages of the custom
+#   exceptions.
 import os
 from datetime import date
 from decimal import Decimal
@@ -10,9 +13,9 @@ import requests
 from fio_banka import (
     Account,
     AccountInfo,
-    DataError,
     RequestError,
     Transaction,
+    ValidationError,
     get_account_info,
     get_transactions,
     str_to_date,
@@ -21,6 +24,7 @@ from fio_banka import AccountStatementFmt as ASFmt
 from fio_banka import TransactionsFmt as TFmt
 
 THIS_DIR = Path(os.path.realpath(__file__)).parent
+Error = tuple[requests.exceptions.RequestException, str] | None
 
 
 class MockResponse:
@@ -28,21 +32,25 @@ class MockResponse:
         self.content: bytes = b"content"
         self.text: str = "text"
         self.url: str | None = None
-        self.error: tuple[str, int] | None = None
-        self.status_code = 200
+        self.error: Error = None
 
     def raise_for_status(self) -> None:
-        if self.error is not None:
-            self.status_code = self.error[1]
-            raise requests.HTTPError(self.error[0], response=self)
+        pass
 
 
 # Prevent real API calls by autousing this fixture.
 @pytest.fixture(autouse=True)
-def mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
+def mock_response(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> MockResponse:
+    param: Error = getattr(request, "param", None)
     response = MockResponse()
+    response.error = param
 
     def mock_get(*args, **kwargs):  # noqa: ARG001
+        if param is not None:
+            raise param[0](param[1])
         response.url = args[0]
         return response
 
@@ -97,7 +105,7 @@ def test_get_transactions(transactions):
                     date=date(2023, 1, 1),
                     amount=Decimal("2000.00"),
                     currency="CZK",
-                    account=None,
+                    account_id=None,
                     account_name="",
                     bank_id=None,
                     bank_name=None,
@@ -105,7 +113,7 @@ def test_get_transactions(transactions):
                     vs="1000",
                     ss=None,
                     user_identification="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
-                    recipient_message="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                    remittance_info="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
                     type="Platba kartou",
                     executor="Novák, Jan",
                     specification=None,
@@ -120,7 +128,7 @@ def test_get_transactions(transactions):
                     date=date(2023, 1, 2),
                     amount=Decimal("-1500.89"),
                     currency="CZK",
-                    account="9876543210",
+                    account_id="9876543210",
                     account_name="",
                     bank_id="0800",
                     bank_name="Česká spořitelna, a.s.",
@@ -128,7 +136,7 @@ def test_get_transactions(transactions):
                     vs="0001",
                     ss="0002",
                     user_identification=None,
-                    recipient_message=None,
+                    remittance_info=None,
                     type="Okamžitá odchozí platba",
                     executor="Novák, Jan",
                     specification=None,
@@ -143,7 +151,7 @@ def test_get_transactions(transactions):
                     date=date(2023, 1, 3),
                     amount=Decimal("500.00"),
                     currency="CZK",
-                    account="2345678901",
+                    account_id="2345678901",
                     account_name="Pavel, Žák",
                     bank_id="2010",
                     bank_name="Fio banka, a.s.",
@@ -151,7 +159,7 @@ def test_get_transactions(transactions):
                     vs=None,
                     ss=None,
                     user_identification=None,
-                    recipient_message=None,
+                    remittance_info=None,
                     type="Příjem převodem uvnitř banky",
                     executor=None,
                     specification="test specification",
@@ -192,12 +200,15 @@ class TestAccount:
         assert account._request(url, ASFmt.PDF) == mock_response.content
         assert account._request(url, ASFmt.GPC) == mock_response.text
 
-        error_msg = "Not found"
-        error_code = 404
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account._request(url, None)
-        assert excinfo.value.status_code == error_code
+    @pytest.mark.parametrize(
+        "mock_response",
+        [(requests.Timeout, "Timeout error msg")],
+        indirect=True,
+    )
+    def test__request_exceptions(self, mock_response: MockResponse, account: Account):
+        assert mock_response.error is not None
+        with pytest.raises(RequestError, match=mock_response.error[1]):
+            account._request("/foo", None)
 
     def test_periods(self, mock_response: MockResponse, account: Account):
         from_date = date(2023, 1, 1)
@@ -257,15 +268,7 @@ class TestAccount:
             f"{self.BASE_URL}/lastStatement/{account._token}/statement"
         )
 
-    def test_request_error(self, mock_response: MockResponse, account: Account):
-        error_msg = "Invalid token"
-        error_code = 500
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account.last(TFmt.JSON)
-        assert excinfo.value.status_code == error_code
-
     def test_data_error(self, mock_response: MockResponse, account: Account):
         mock_response.text = b"bytes"  # type: ignore[assignment]
-        with pytest.raises(DataError):
+        with pytest.raises(ValidationError):
             account.last(TFmt.XML)

@@ -1,12 +1,20 @@
-"""This module provides a wrapper and helper functions for Fio banka, a.s. API
+"""This module provides, variables, a wrapper and helper functions for Fio banka, a.s. API
 
+* REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
 * `Account`: wrapper for interaction with an account
 * `TransactionsFmt`: enum of transaction report formats consumed by `Account` methods
 * `AccountStatementFmt`: enum of account statement formats consumed by `Account` methods
 * Type aliases: `Fmt` and a couple of `Optional*` types
 * `AccountInfo`: container for account information
 * `Transaction`: container for transaction data
-* Exceptions: `RequestError` and `DataError`, both subclasses of `FioBankaError`
+* Exceptions:
+    * `FioBankaError`: base exception for all custom exceptions
+        * `RequestError`: raised when a request error occurs
+            * `InvalidRequestError`: raised when the request (typically the URL) is invalid
+            * `TimeLimitError`: raised when the request time limit is exceeded
+            * `InvalidTokenError`: raised when the token is inactive or invalid
+            * `TooManyItemsError`: raised when the number of transactions in the request is > 50000.
+        * `ValidationError`: raised when a data validation failed
 * `str_to_date`: helper function for parsing date strings
 * `get_account_info`: helper function for getting `AccountInfo`
 * `get_transactions`: helper generator yielding `Transaction` objects
@@ -29,7 +37,7 @@ Basic usage:
         date=datetime.date(2023, 1, 1),
         amount=Decimal('2000.0'),
         currency='CZK',
-        account=None,
+        account_id=None,
         ...
     )
 """
@@ -41,6 +49,8 @@ from enum import StrEnum, auto, unique
 from typing import NamedTuple
 
 import requests
+
+REQUEST_TIMELIMIT = 30  # seconds
 
 
 @unique
@@ -104,7 +114,7 @@ class Transaction(NamedTuple):
     date: date
     amount: Decimal
     currency: str
-    account: OptionalStr
+    account_id: OptionalStr
     account_name: OptionalStr
     bank_id: OptionalStr
     bank_name: OptionalStr
@@ -112,7 +122,7 @@ class Transaction(NamedTuple):
     vs: OptionalStr
     ss: OptionalStr
     user_identification: OptionalStr
-    recipient_message: OptionalStr
+    remittance_info: OptionalStr
     type: OptionalStr  # noqa: A003
     executor: OptionalStr
     specification: OptionalStr
@@ -127,28 +137,45 @@ class FioBankaError(Exception):
 
 
 class RequestError(FioBankaError):
-    """Raised when a server or a client error occurs.
-
-    Args:
-        message (str): an error message
-        status_code (int): an HTTP response status code
-
-    Attrs:
-        status_code (int): an HTTP response status code
-    """
-
-    # https://stackoverflow.com/a/1319675
-    def __init__(self, message: str, status_code: int) -> None:
-        super().__init__(message)
-        self._status_code = status_code
-
-    @property
-    def status_code(self):
-        return self._status_code
+    """Raised when a request error occurs."""
 
 
-class DataError(FioBankaError):
-    """Raised when the fetched data are invalid."""
+class InvalidRequestError(RequestError):
+    """Raised when the request (typically the URL) is invalid."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Invalid request. Make sure the URL and its parameters are correct.",
+        )
+
+
+class TimeLimitError(RequestError):
+    """Raised when the request time limit is exceeded."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            f"Exceeded time limit (1 request per {REQUEST_TIMELIMIT}s).",
+        )
+
+
+class InvalidTokenError(RequestError):
+    """Raised when the token is inactive or invalid."""
+
+    def __init__(self) -> None:
+        super().__init__("Invalid token. Make sure the token is active and valid.")
+
+
+class TooManyItemsError(RequestError):
+    """Raised when the number of transactions in the request is > 50000."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Too many items. Make sure the number of transactions in the request is <= 50000.",
+        )
+
+
+class ValidationError(FioBankaError):
+    """Raised when a data validation failed."""
 
 
 def _parse_data(data: str):
@@ -158,7 +185,7 @@ def _parse_data(data: str):
 
 def _check_type(data, _type):
     if not isinstance(data, _type):
-        raise DataError(f"Unexpected data type: {type(data)}, expected {_type}")
+        raise ValidationError(f"Unexpected data type: {type(data)}, expected {_type}")
     return data
 
 
@@ -244,7 +271,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             date=get_value(txn, "column0", coerce=str_to_date),
             amount=get_value(txn, "column1"),
             currency=get_value(txn, "column14"),
-            account=get_value(txn, "column2"),
+            account_id=get_value(txn, "column2"),
             account_name=get_value(txn, "column10"),
             bank_id=get_value(txn, "column3"),
             bank_name=get_value(txn, "column12"),
@@ -252,7 +279,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             vs=get_value(txn, "column5"),
             ss=get_value(txn, "column6"),
             user_identification=get_value(txn, "column7"),
-            recipient_message=get_value(txn, "column16"),
+            remittance_info=get_value(txn, "column16"),
             type=get_value(txn, "column8"),
             executor=get_value(txn, "column9"),
             specification=get_value(txn, "column18"),
@@ -266,9 +293,6 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
 class Account:
     """Wrapper for interaction with an account
 
-    Class vars:
-        REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
-
     Args:
         token (str): an unique string 64 characters long
 
@@ -277,26 +301,47 @@ class Account:
     """
 
     _BASE_URL = "https://www.fio.cz/ib_api/rest"
-    REQUEST_TIMELIMIT = 30  # seconds
 
     def __init__(self, token: str) -> None:
         token_len = 64
         if len(token) != token_len:
             raise ValueError(f"Token has to be {token_len} characters long")
         self._token = token
+        # https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
+        # It's a good practice to set connect timeouts to slightly larger than
+        # a multiple of 3, which is the default TCP packet retransmission window.
         self._timeout = 10  # seconds
 
     def _request(self, url: str, fmt: Fmt | None) -> str | bytes:
-        response: requests.Response = requests.get(
-            self._BASE_URL + url,
-            timeout=self._timeout,
-        )
+        # IMPORTANT: Make sure token value is not leaked into error msgs or logs.
+        def hide_token(s: str) -> str:
+            return s.replace(self._token, "*" * 10)
+
+        try:
+            response: requests.Response = requests.get(
+                self._BASE_URL + url,
+                timeout=self._timeout,
+            )
+        # TODO: see https://devdocs.io/python~3.11/library/exceptions
+        except requests.exceptions.RequestException as exc:
+            # Timeout is typically hit when trying to use an invalid token.
+            raise RequestError(hide_token(str(exc) + " (invalid token?)")) from exc
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
-            # Make sure token value is not leaked into error msg.
-            message = str(exc).replace(self._token, "TOKEN_VALUE_IS_HIDDEN")
-            raise RequestError(message, response.status_code) from exc
+            exception: type[RequestError]
+            match response.status_code:
+                case 404:
+                    exception = InvalidRequestError
+                case 409:
+                    exception = TimeLimitError
+                case 413:
+                    exception = TooManyItemsError
+                case 500:
+                    exception = InvalidTokenError
+                case _:
+                    raise RequestError(hide_token(str(exc))) from exc
+            raise exception from exc
         match fmt:
             case AccountStatementFmt.PDF:
                 return response.content  # bytes

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -23,21 +23,18 @@ classifiers = [
   "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-  "requests>=2.31.0,<3.0",
+  "requests>=2.31.0,<3.0",  # manually sync with mypy deps in .pre-commit-config.yaml
 ]
 
 [project.urls]
 Homepage = "https://github.com/peberanek/fio-banka"
 
 [project.optional-dependencies]
-development = [
+devel = [
   "pre-commit>=3.3.1,<4.0",
   "pytest>=7.3.1,<8.0",
   "pytest-cov>=4.1.0,<5.0",
-]
-distribution = [
-  "build>=0.10.0,<1.0",
-  "twine>=4.0.2,<5.0",
+  "types-requests>=2.31.0.0,<3",
 ]
 
 [tool.pytest.ini_options]
@@ -55,6 +52,7 @@ select = [
   "N",    # pep8-naming
   "UP",   # pyupgrade
   "YTT",  # flake8-2020
+  "S",    # flake8-bandit
   "BLE",  # flake8-blind-except
   "FBT",  # flake8-boolean-trap
   "B",    # flake8-bugbear
@@ -84,5 +82,7 @@ ignore = ["TRY003"]
 # These may break temporarily commented-out code
 unfixable = ["F401", "F841"]
 
-[tool.bandit.assert_used]
-skips = ["*/test_*.py"]
+[tool.ruff.per-file-ignores]
+"tests/*" = [
+  "S101",
+]

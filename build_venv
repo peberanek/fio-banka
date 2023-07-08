@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+venv_dir='./venv'
+echo "Building Python virtual environment at ${venv_dir}"
+python3 -m venv --clear --upgrade-deps "${venv_dir}"
+# shellcheck source=/dev/null
+source "${venv_dir}/bin/activate"
+python3 -m pip install --editable '.[devel]'
