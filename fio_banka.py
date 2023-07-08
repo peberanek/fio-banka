@@ -14,7 +14,7 @@
             * `TimeLimitError`: raised when the request time limit is exceeded
             * `InvalidTokenError`: raised when the token is inactive or invalid
             * `TooManyItemsError`: raised when the number of transactions in the request is > 50000.
-        * `DataError`: raised when the fetched data are invalid
+        * `ValidationError`: raised when a data validation failed
 * `str_to_date`: helper function for parsing date strings
 * `get_account_info`: helper function for getting `AccountInfo`
 * `get_transactions`: helper generator yielding `Transaction` objects
@@ -174,9 +174,8 @@ class TooManyItemsError(RequestError):
         )
 
 
-# TODO: rename to ValiationError
-class DataError(FioBankaError):
-    """Raised when the fetched data are invalid."""
+class ValidationError(FioBankaError):
+    """Raised when a data validation failed."""
 
 
 def _parse_data(data: str):
@@ -186,7 +185,7 @@ def _parse_data(data: str):
 
 def _check_type(data, _type):
     if not isinstance(data, _type):
-        raise DataError(f"Unexpected data type: {type(data)}, expected {_type}")
+        raise ValidationError(f"Unexpected data type: {type(data)}, expected {_type}")
     return data
 
 

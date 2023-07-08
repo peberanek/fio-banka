@@ -13,9 +13,9 @@ import requests
 from fio_banka import (
     Account,
     AccountInfo,
-    DataError,
     RequestError,
     Transaction,
+    ValidationError,
     get_account_info,
     get_transactions,
     str_to_date,
@@ -270,5 +270,5 @@ class TestAccount:
 
     def test_data_error(self, mock_response: MockResponse, account: Account):
         mock_response.text = b"bytes"  # type: ignore[assignment]
-        with pytest.raises(DataError):
+        with pytest.raises(ValidationError):
             account.last(TFmt.XML)
