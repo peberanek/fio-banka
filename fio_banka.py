@@ -1,7 +1,7 @@
-"""This module provides, variables, a wrapper and helper functions for Fio banka, a.s. API
+"""A client and helper functions for Fio banka, a.s. API
 
 * REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
-* `Account`: wrapper for interaction with an account
+* `Account`: client for interaction with an account
 * `TransactionsFmt`: enum of transaction report formats consumed by `Account` methods
 * `AccountStatementFmt`: enum of account statement formats consumed by `Account` methods
 * Type aliases: `Fmt` and a couple of `Optional*` types
@@ -21,7 +21,7 @@
 
 Basic usage:
     >>> from fio_banka import Account, TransactionsFmt, get_account_info, get_transactions
-    >>> account = Account("<your-token>")
+    >>> account = Account("<API-token>")
     >>> data = account.last(TransactionsFmt.JSON)
     >>> get_account_info(data)
     AccountInfo(
@@ -55,7 +55,7 @@ REQUEST_TIMELIMIT = 30  # seconds
 
 @unique
 class TransactionsFmt(StrEnum):
-    """An Enum of transaction report formats"""
+    """Transaction report formats"""
 
     CSV = auto()
     GPC = auto()
@@ -67,7 +67,7 @@ class TransactionsFmt(StrEnum):
 
 @unique
 class AccountStatementFmt(StrEnum):
-    """An Enum of account statement formats"""
+    """Account statement formats"""
 
     CSV = auto()
     GPC = auto()
@@ -133,15 +133,15 @@ class Transaction(NamedTuple):
 
 
 class FioBankaError(Exception):
-    """Base exception for all custom exceptions"""
+    """Base exception for all Fio-banka exceptions."""
 
 
 class RequestError(FioBankaError):
-    """Raised when a request error occurs."""
+    """An HTTP request cannot be fulfilled."""
 
 
 class InvalidRequestError(RequestError):
-    """Raised when the request (typically the URL) is invalid."""
+    """Request (typically the URL) is invalid."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -150,7 +150,7 @@ class InvalidRequestError(RequestError):
 
 
 class TimeLimitError(RequestError):
-    """Raised when the request time limit is exceeded."""
+    """Request time limit has been exceeded."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -159,27 +159,27 @@ class TimeLimitError(RequestError):
 
 
 class InvalidTokenError(RequestError):
-    """Raised when the token is inactive or invalid."""
+    """Token is inactive or invalid."""
 
     def __init__(self) -> None:
         super().__init__("Invalid token. Make sure the token is active and valid.")
 
 
 class TooManyItemsError(RequestError):
-    """Raised when the number of transactions in the request is > 50000."""
+    """The number of transactions exceeds 50000."""
 
     def __init__(self) -> None:
         super().__init__(
-            "Too many items. Make sure the number of transactions in the request is <= 50000.",
+            "Too many items. Make sure the number of requested transactions is <= 50000.",
         )
 
 
 class ValidationError(FioBankaError):
-    """Raised when a data validation failed."""
+    """Fetched data are invalid."""
 
 
 def _parse_data(data: str):
-    # json.JSONDecodeError is subclass of ValueError
+    # json.JSONDecodeError is a subclass of ValueError
     return json.loads(data, parse_float=Decimal)
 
 
@@ -195,9 +195,6 @@ def str_to_date(date_str: str) -> date:
     Args:
         date_str (str): a date string, e.g. '2023-01-01+0100'
 
-    Raises:
-        ValueError: raised when date_str cannot be parsed
-
     Returns:
         date
     """
@@ -210,9 +207,6 @@ def get_account_info(data: str) -> AccountInfo:
     Args:
         data (str): a JSON string representing transactions or
             an account statement
-
-    Raises:
-        ValueError: raised when input data are invalid
 
     Returns:
         AccountInfo: a data structure representing account information
@@ -240,14 +234,11 @@ def get_account_info(data: str) -> AccountInfo:
 
 
 def get_transactions(data: str) -> Generator[Transaction, None, None]:
-    """Return generator yielding transactions from data.
+    """Yield transactions from data.
 
     Args:
         data (str): a JSON string representing transactions or
             an account statement
-
-    Raises:
-        ValueError: raised when input data are invalid
 
     Yields:
         Generator[Transaction, None, None]
@@ -291,18 +282,16 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
 
 
 class Account:
-    """Wrapper for interaction with an account
-
-    Args:
-        token (str): an unique string 64 characters long
-
-    Raises:
-        ValueError: raised when the provided token has an invalid format
-    """
+    """Client for interaction with an account."""
 
     _BASE_URL = "https://www.fio.cz/ib_api/rest"
 
     def __init__(self, token: str) -> None:
+        """Return an instance of the Account class.
+
+        Args:
+            token (str): an API token (64 characters long)
+        """
         token_len = 64
         if len(token) != token_len:
             raise ValueError(f"Token has to be {token_len} characters long")
@@ -315,7 +304,7 @@ class Account:
     def _request(self, url: str, fmt: Fmt | None) -> str | bytes:
         # IMPORTANT: Make sure token value is not leaked into error msgs or logs.
         def hide_token(s: str) -> str:
-            return s.replace(self._token, "*" * 10)
+            return s.replace(self._token, "****TOKEN****")
 
         try:
             response: requests.Response = requests.get(
@@ -359,7 +348,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             str
@@ -392,7 +381,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             str
@@ -429,7 +418,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             tuple[int, int]: year and ID of the last official account statement

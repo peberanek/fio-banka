@@ -1,4 +1,4 @@
-# Fio Banka API
+# Fio Banka API Client
 
 [![image](https://img.shields.io/pypi/v/fio-banka)](https://pypi.org/project/fio-banka/)
 [![image](https://img.shields.io/pypi/l/fio-banka)](https://pypi.org/project/fio-banka/)
@@ -6,11 +6,11 @@
 [![image](https://github.com/peberanek/fio-banka/actions/workflows/tests.yml/badge.svg)](https://github.com/peberanek/fio-banka/actions/workflows/tests.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/peberanek/fio-banka/main.svg)](https://results.pre-commit.ci/latest/github/peberanek/fio-banka/main)
 
-Thin wrapper for [Fio Banka, a.s. API](https://www.fio.cz/bank-services/internetbanking-api). Inspired by Honza Javorek's [fiobank](https://github.com/honzajavorek/fiobank).
+Client for [Fio Banka, a.s. API](https://www.fio.cz/bank-services/internetbanking-api). Inspired by Honza Javorek's [fiobank](https://github.com/honzajavorek/fiobank).
 
 ## Description
 
-This wrapper is intentionally simple. It does not limit the user by any specific data processing, data structures or error handling. Instead, it returns data as-is, i.e. in a text or a binary format. So the user can handle the processing, errors, data validation or more complex stuff (like caching) according to their needs. A couple of helper functions for data extraction are included nonetheless (see the [Usage](#usage) section below).
+This client is useful if you need to parse account info and transactions in 1 request (Fio banka imposes a limit of 1 request per 30 seconds) or if you want to fetch raw data (text or binary - e.g. PDF).
 
 Currently, merchant transaction report and order upload are not implemented. Feel free to send a PR (I believe they should be reasonably easy to implement).
 
@@ -28,12 +28,12 @@ pip install fio-banka
 
 ```python
 >>> from datetime import date
->>> from fio_banka
+>>> import fio_banka
 
->>> account = fio_banka.Account("<your-token>")
+>>> account = fio_banka.Account("<API-token>")
 >>> fmt = fio_banka.TransactionsFmt.JSON
 >>> account.periods(date(2023, 1, 1), date(2023, 1, 2), fmt)
-'{"accountStatement":{"info":{"accountId": ... '
+'{"accountStatement":{"info":{"accountId": ...(long output)... '
 
 >>> try:
 >>>     account.last(fmt)
@@ -45,7 +45,7 @@ Exceeded time limit (1 request per 30s).
 >>> time.sleep(fio_banka.REQUEST_TIMELIMIT)
 >>> data = account.last(fmt)
 >>> data
-'{"accountStatement":{"info":{"accountId": ... '
+'{"accountStatement":{"info":{"accountId": ...(long output)... '
 ```
 
 Data extraction (make sure data are downloaded as *JSON*):
@@ -67,7 +67,7 @@ AccountInfo(
     id_to=10000000002,
     id_last_download=None
 )
->>> list(fio_banka.get_transactions(data))[0]
+>>> list(fio_banka.get_transactions(data))[:2]
 Transaction(
     transaction_id='10000000000',
     date=datetime.date(2023, 1, 1),
@@ -90,23 +90,41 @@ Transaction(
     order_id=30000000000,
     payer_reference=None
 )
+Transaction(
+    transaction_id="10000000001",
+    date=datetime.date(2023, 1, 2),
+    amount=Decimal("-1500.89"),
+    currency="CZK",
+    account_id="9876543210",
+    account_name="",
+    bank_id="0800",
+    bank_name="Česká spořitelna, a.s.",
+    ks="0558",
+    vs="0001",
+    ss="0002",
+    user_identification=None,
+    remittance_info=None,  # Zprava pro prijemce
+    type="Okamžitá odchozí platba",
+    executor="Novák, Jan",
+    specification=None,
+    comment=None,
+    bic=None,
+    order_id=30000000001,
+    payer_reference=None,
+)
 ```
 
 ## Contributing
 
 Build and activate development environment:
-```
-make venv
+```bash
+./build_venv
 source venv/bin/activate
-```
-
-Install [pre-commit](https://pre-commit.com/) hook:
-```
-pre-commit install
+pre-commit install  # https://pre-commit.com/
 ```
 
 Run tests:
-```
+```bash
 pytest
 ```
 
