@@ -302,7 +302,9 @@ class Account:
         self._timeout = 10  # seconds
 
     def _request(self, url: str, fmt: Fmt | None) -> str | bytes:
-        # IMPORTANT: Make sure token value is not leaked into error msgs or logs.
+        # WARNING: Raising exceptions from `requests` exceptions may leak
+        # the API token (in the request URL) into traceback. Use the `from`
+        # clause with caution.
         def hide_token(s: str) -> str:
             return s.replace(self._token, "****TOKEN****")
 
@@ -311,10 +313,9 @@ class Account:
                 self._BASE_URL + url,
                 timeout=self._timeout,
             )
-        # TODO: see https://devdocs.io/python~3.11/library/exceptions
         except requests.exceptions.RequestException as exc:
             # Timeout is typically hit when trying to use an invalid token.
-            raise RequestError(hide_token(str(exc) + " (invalid token?)")) from exc
+            raise RequestError(hide_token(str(exc) + " (invalid token?)")) from None
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
@@ -329,7 +330,7 @@ class Account:
                 case 500:
                     exception = InvalidTokenError
                 case _:
-                    raise RequestError(hide_token(str(exc))) from exc
+                    raise RequestError(hide_token(str(exc))) from None
             raise exception from exc
         match fmt:
             case AccountStatementFmt.PDF:
