@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "fio_banka"
 dynamic = ["version"]
 authors = [{ name = "Petr Beranek", email = "petrberanek.mail@gmail.com" }]
-description = "Thin wrapper for Fio Banka, a.s. API"
+description = "Fio Banka API Client"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
