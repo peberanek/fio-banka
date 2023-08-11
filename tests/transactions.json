@@ -6,8 +6,8 @@
             "currency": "CZK",
             "iban": "CZ1000000000002000000000",
             "bic": "FIOBCZPPXXX",
-            "openingBalance": 1000.99,
-            "closingBalance": 2000.10,
+            "openingBalance": 4000.99,
+            "closingBalance": 1000.10,
             "dateStart": "2023-01-01+0100",
             "dateEnd": "2023-01-03+0100",
             "yearList": null,
@@ -30,7 +30,7 @@
                         "id": 0
                     },
                     "column1": {
-                        "value": 2000.0,
+                        "value": -2000.0,
                         "name": "Objem",
                         "id": 1
                     },
@@ -55,12 +55,12 @@
                     },
                     "column6": null,
                     "column7": {
-                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
                         "name": "Uživatelská identifikace",
                         "id": 7
                     },
                     "column16": {
-                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
                         "name": "Zpráva pro příjemce",
                         "id": 16
                     },
@@ -76,7 +76,7 @@
                     },
                     "column18": null,
                     "column25": {
-                        "value": "Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                        "value": "Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
                         "name": "Komentář",
                         "id": 25
                     },

@@ -1,19 +1,28 @@
-"""This module provides a wrapper and helper functions for Fio banka, a.s. API
+"""A client and helper functions for Fio banka, a.s. API.
 
-* `Account`: wrapper for interaction with an account
+* REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
+* `Account`: client for interaction with an account
 * `TransactionsFmt`: enum of transaction report formats consumed by `Account` methods
 * `AccountStatementFmt`: enum of account statement formats consumed by `Account` methods
 * Type aliases: `Fmt` and a couple of `Optional*` types
 * `AccountInfo`: container for account information
 * `Transaction`: container for transaction data
-* Exceptions: `RequestError` and `DataError`, both subclasses of `FioBankaError`
+* Exceptions:
+    * `FioBankaError`: Base exception for all Fio banka exceptions.
+        * `RequestError`: An HTTP request could not be fulfilled.
+            * `InvalidRequestError`: Request (typically the URL) is invalid.
+            * `TimeLimitError`: Request time limit has been exceeded.
+            * `InvalidTokenError`: Token is inactive or invalid.
+            * `TooManyItemsError`: The number of transactions exceeds 50000.
+            * `AuthorizationError`: Token is not authorized to fetch historical data.
+        * `ValidationError`: Fetched data are invalid.
 * `str_to_date`: helper function for parsing date strings
 * `get_account_info`: helper function for getting `AccountInfo`
 * `get_transactions`: helper generator yielding `Transaction` objects
 
 Basic usage:
     >>> from fio_banka import Account, TransactionsFmt, get_account_info, get_transactions
-    >>> account = Account("<your-token>")
+    >>> account = Account("<API-token>")
     >>> data = account.last(TransactionsFmt.JSON)
     >>> get_account_info(data)
     AccountInfo(
@@ -29,7 +38,7 @@ Basic usage:
         date=datetime.date(2023, 1, 1),
         amount=Decimal('2000.0'),
         currency='CZK',
-        account=None,
+        account_id=None,
         ...
     )
 """
@@ -42,10 +51,12 @@ from typing import NamedTuple
 
 import requests
 
+REQUEST_TIMELIMIT = 30  # seconds
+
 
 @unique
 class TransactionsFmt(StrEnum):
-    """An Enum of transaction report formats"""
+    """Transaction report formats."""
 
     CSV = auto()
     GPC = auto()
@@ -57,7 +68,7 @@ class TransactionsFmt(StrEnum):
 
 @unique
 class AccountStatementFmt(StrEnum):
-    """An Enum of account statement formats"""
+    """Account statement formats."""
 
     CSV = auto()
     GPC = auto()
@@ -79,7 +90,7 @@ OptionalInt = int | None
 
 
 class AccountInfo(NamedTuple):
-    """Container for account information"""
+    """Container for account information."""
 
     account_id: OptionalStr
     bank_id: OptionalStr
@@ -98,13 +109,13 @@ class AccountInfo(NamedTuple):
 
 
 class Transaction(NamedTuple):
-    """Container for transaction data"""
+    """Container for transaction data."""
 
     transaction_id: str
     date: date
     amount: Decimal
     currency: str
-    account: OptionalStr
+    account_id: OptionalStr
     account_name: OptionalStr
     bank_id: OptionalStr
     bank_name: OptionalStr
@@ -112,7 +123,7 @@ class Transaction(NamedTuple):
     vs: OptionalStr
     ss: OptionalStr
     user_identification: OptionalStr
-    recipient_message: OptionalStr
+    remittance_info: OptionalStr
     type: OptionalStr  # noqa: A003
     executor: OptionalStr
     specification: OptionalStr
@@ -123,42 +134,75 @@ class Transaction(NamedTuple):
 
 
 class FioBankaError(Exception):
-    """Base exception for all custom exceptions"""
+    """Base exception for all Fio banka exceptions."""
 
 
 class RequestError(FioBankaError):
-    """Raised when a server or a client error occurs.
-
-    Args:
-        message (str): an error message
-        status_code (int): an HTTP response status code
-
-    Attrs:
-        status_code (int): an HTTP response status code
-    """
-
-    # https://stackoverflow.com/a/1319675
-    def __init__(self, message: str, status_code: int) -> None:
-        super().__init__(message)
-        self._status_code = status_code
-
-    @property
-    def status_code(self):
-        return self._status_code
+    """An HTTP request could not be fulfilled."""
 
 
-class DataError(FioBankaError):
-    """Raised when the fetched data are invalid."""
+class InvalidRequestError(RequestError):
+    """Request (typically the URL) is invalid."""
+
+    def __init__(self) -> None:
+        """Initialize the exception."""
+        super().__init__(
+            "Invalid request. Make sure the URL and its parameters are correct.",
+        )
+
+
+class TimeLimitError(RequestError):
+    """Request time limit has been exceeded."""
+
+    def __init__(self) -> None:
+        """Initialize the exception."""
+        super().__init__(
+            f"Exceeded time limit (1 request per {REQUEST_TIMELIMIT}s).",
+        )
+
+
+class InvalidTokenError(RequestError):
+    """Token is inactive or invalid."""
+
+    def __init__(self) -> None:
+        """Initialize the exception."""
+        super().__init__("Invalid token. Make sure the token is active and valid.")
+
+
+class TooManyItemsError(RequestError):
+    """The number of transactions exceeds 50000."""
+
+    def __init__(self) -> None:
+        """Initialize the exception."""
+        super().__init__(
+            "Too many items. Make sure the number of requested transactions is <= 50000.",
+        )
+
+
+class AuthorizationError(RequestError):
+    """Token is not authorized to fetch historical data."""
+
+    def __init__(self) -> None:
+        """Initialize the exception."""
+        super().__init__(
+            "Authorization error. Make sure the token is authorized to fetch"
+            " data older than 90 days. Follow instructions at"
+            " https://www.fio.cz/docs/cz/API_Bankovnictvi.pdf, section 3.1.",
+        )
+
+
+class ValidationError(FioBankaError):
+    """Fetched data are invalid."""
 
 
 def _parse_data(data: str):
-    # json.JSONDecodeError is subclass of ValueError
+    # json.JSONDecodeError is a subclass of ValueError
     return json.loads(data, parse_float=Decimal)
 
 
 def _check_type(data, _type):
     if not isinstance(data, _type):
-        raise DataError(f"Unexpected data type: {type(data)}, expected {_type}")
+        raise ValidationError(f"Unexpected data type: {type(data)}, expected {_type}")
     return data
 
 
@@ -167,9 +211,6 @@ def str_to_date(date_str: str) -> date:
 
     Args:
         date_str (str): a date string, e.g. '2023-01-01+0100'
-
-    Raises:
-        ValueError: raised when date_str cannot be parsed
 
     Returns:
         date
@@ -183,9 +224,6 @@ def get_account_info(data: str) -> AccountInfo:
     Args:
         data (str): a JSON string representing transactions or
             an account statement
-
-    Raises:
-        ValueError: raised when input data are invalid
 
     Returns:
         AccountInfo: a data structure representing account information
@@ -213,14 +251,11 @@ def get_account_info(data: str) -> AccountInfo:
 
 
 def get_transactions(data: str) -> Generator[Transaction, None, None]:
-    """Return generator yielding transactions from data.
+    """Yield transactions from data.
 
     Args:
         data (str): a JSON string representing transactions or
             an account statement
-
-    Raises:
-        ValueError: raised when input data are invalid
 
     Yields:
         Generator[Transaction, None, None]
@@ -244,7 +279,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             date=get_value(txn, "column0", coerce=str_to_date),
             amount=get_value(txn, "column1"),
             currency=get_value(txn, "column14"),
-            account=get_value(txn, "column2"),
+            account_id=get_value(txn, "column2"),
             account_name=get_value(txn, "column10"),
             bank_id=get_value(txn, "column3"),
             bank_name=get_value(txn, "column12"),
@@ -252,7 +287,7 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
             vs=get_value(txn, "column5"),
             ss=get_value(txn, "column6"),
             user_identification=get_value(txn, "column7"),
-            recipient_message=get_value(txn, "column16"),
+            remittance_info=get_value(txn, "column16"),
             type=get_value(txn, "column8"),
             executor=get_value(txn, "column9"),
             specification=get_value(txn, "column18"),
@@ -264,39 +299,58 @@ def get_transactions(data: str) -> Generator[Transaction, None, None]:
 
 
 class Account:
-    """Wrapper for interaction with an account
-
-    Class vars:
-        REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
-
-    Args:
-        token (str): an unique string 64 characters long
-
-    Raises:
-        ValueError: raised when the provided token has an invalid format
-    """
+    """Client for interaction with an account."""
 
     _BASE_URL = "https://www.fio.cz/ib_api/rest"
-    REQUEST_TIMELIMIT = 30  # seconds
 
     def __init__(self, token: str) -> None:
+        """Return an instance of the Account class.
+
+        Args:
+            token (str): an API token (64 characters long)
+        """
         token_len = 64
         if len(token) != token_len:
             raise ValueError(f"Token has to be {token_len} characters long")
         self._token = token
+        # https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
+        # It's a good practice to set connect timeouts to slightly larger than
+        # a multiple of 3, which is the default TCP packet retransmission window.
         self._timeout = 10  # seconds
 
     def _request(self, url: str, fmt: Fmt | None) -> str | bytes:
-        response: requests.Response = requests.get(
-            self._BASE_URL + url,
-            timeout=self._timeout,
-        )
+        # WARNING: Raising exceptions from `requests` exceptions may leak
+        # the API token (in the request URL) into traceback. Use the `from`
+        # clause with caution.
+        def hide_token(s: str) -> str:
+            return s.replace(self._token, "****TOKEN****")
+
+        try:
+            response: requests.Response = requests.get(
+                self._BASE_URL + url,
+                timeout=self._timeout,
+            )
+        except requests.exceptions.RequestException as exc:
+            # Timeout is typically hit when trying to use an invalid token.
+            raise RequestError(hide_token(str(exc) + " (invalid token?)")) from None
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
-            # Make sure token value is not leaked into error msg.
-            message = str(exc).replace(self._token, "TOKEN_VALUE_IS_HIDDEN")
-            raise RequestError(message, response.status_code) from exc
+            exception: RequestError
+            match response.status_code:
+                case 404:
+                    exception = InvalidRequestError()
+                case 409:
+                    exception = TimeLimitError()
+                case 413:
+                    exception = TooManyItemsError()
+                case 422:
+                    exception = AuthorizationError()
+                case 500:
+                    exception = InvalidTokenError()
+                case _:
+                    exception = RequestError(hide_token(str(exc)))
+            raise exception from None
         match fmt:
             case AccountStatementFmt.PDF:
                 return response.content  # bytes
@@ -314,7 +368,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             str
@@ -347,7 +401,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             str
@@ -384,7 +438,7 @@ class Account:
 
         Raises:
             RequestError: raised when a server or a client error occurs
-            DataError: raised when the fetched data are invalid
+            ValidationError: raised when the fetched data are invalid
 
         Returns:
             tuple[int, int]: year and ID of the last official account statement

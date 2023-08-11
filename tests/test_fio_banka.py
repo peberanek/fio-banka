@@ -10,9 +10,14 @@ import requests
 from fio_banka import (
     Account,
     AccountInfo,
-    DataError,
+    AuthorizationError,
+    InvalidRequestError,
+    InvalidTokenError,
     RequestError,
+    TimeLimitError,
+    TooManyItemsError,
     Transaction,
+    ValidationError,
     get_account_info,
     get_transactions,
     str_to_date,
@@ -21,33 +26,6 @@ from fio_banka import AccountStatementFmt as ASFmt
 from fio_banka import TransactionsFmt as TFmt
 
 THIS_DIR = Path(os.path.realpath(__file__)).parent
-
-
-class MockResponse:
-    def __init__(self) -> None:
-        self.content: bytes = b"content"
-        self.text: str = "text"
-        self.url: str | None = None
-        self.error: tuple[str, int] | None = None
-        self.status_code = 200
-
-    def raise_for_status(self) -> None:
-        if self.error is not None:
-            self.status_code = self.error[1]
-            raise requests.HTTPError(self.error[0], response=self)
-
-
-# Prevent real API calls by autousing this fixture.
-@pytest.fixture(autouse=True)
-def mock_response(monkeypatch: pytest.MonkeyPatch) -> MockResponse:
-    response = MockResponse()
-
-    def mock_get(*args, **kwargs):  # noqa: ARG001
-        response.url = args[0]
-        return response
-
-    monkeypatch.setattr(requests, "get", mock_get)
-    return response
 
 
 @pytest.fixture()
@@ -69,8 +47,8 @@ def test_get_account_info(transactions):
         currency="CZK",
         iban="CZ1000000000002000000000",
         bic="FIOBCZPPXXX",
-        opening_balance=Decimal("1000.99"),
-        closing_balance=Decimal("2000.10"),
+        opening_balance=Decimal("4000.99"),
+        closing_balance=Decimal("1000.10"),
         date_start=date(2023, 1, 1),
         date_end=date(2023, 1, 3),
         year_list=None,
@@ -95,21 +73,21 @@ def test_get_transactions(transactions):
                 assert txn == Transaction(
                     transaction_id="10000000000",
                     date=date(2023, 1, 1),
-                    amount=Decimal("2000.00"),
+                    amount=Decimal("-2000.00"),
                     currency="CZK",
-                    account=None,
+                    account_id=None,
                     account_name="",
                     bank_id=None,
                     bank_name=None,
                     ks=None,
                     vs="1000",
                     ss=None,
-                    user_identification="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
-                    recipient_message="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                    user_identification="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
+                    remittance_info="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
                     type="Platba kartou",
                     executor="Novák, Jan",
                     specification=None,
-                    comment="Nákup: example.com, dne 31.12.2022, částka  20.00 USD",
+                    comment="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
                     bic=None,
                     order_id=30000000000,
                     payer_reference=None,
@@ -120,7 +98,7 @@ def test_get_transactions(transactions):
                     date=date(2023, 1, 2),
                     amount=Decimal("-1500.89"),
                     currency="CZK",
-                    account="9876543210",
+                    account_id="9876543210",
                     account_name="",
                     bank_id="0800",
                     bank_name="Česká spořitelna, a.s.",
@@ -128,7 +106,7 @@ def test_get_transactions(transactions):
                     vs="0001",
                     ss="0002",
                     user_identification=None,
-                    recipient_message=None,
+                    remittance_info=None,
                     type="Okamžitá odchozí platba",
                     executor="Novák, Jan",
                     specification=None,
@@ -143,7 +121,7 @@ def test_get_transactions(transactions):
                     date=date(2023, 1, 3),
                     amount=Decimal("500.00"),
                     currency="CZK",
-                    account="2345678901",
+                    account_id="2345678901",
                     account_name="Pavel, Žák",
                     bank_id="2010",
                     bank_name="Fio banka, a.s.",
@@ -151,7 +129,7 @@ def test_get_transactions(transactions):
                     vs=None,
                     ss=None,
                     user_identification=None,
-                    recipient_message=None,
+                    remittance_info=None,
                     type="Příjem převodem uvnitř banky",
                     executor=None,
                     specification="test specification",
@@ -168,15 +146,53 @@ def test_get_transactions(transactions):
         list(get_transactions("{}"))
 
 
+class MockResponse:
+    def __init__(self, status_code: int) -> None:
+        self.content: bytes = b"content"
+        self.text: str = "text"
+        self.url: str | None = None
+        self.status_code = status_code
+
+    def raise_for_status(self) -> None:
+        if 400 <= self.status_code < 600:  # noqa: PLR2004
+            raise requests.HTTPError(
+                f"{self.status_code} Mocked error for url: {self.url}",
+                response=self,
+            )
+
+
+@pytest.fixture()
+def mock_requests(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> MockResponse:
+    """Mock the `requests` pkg.
+
+    Param:
+        dict: {
+            "status_code": int,  # an HTTP status code
+            "do_raise": bool  # raise a request exception
+        }
+    """
+    param = getattr(request, "param", {})
+    status_code = param.get("status_code", 200)
+    do_raise = param.get("do_raise", False)
+    response = MockResponse(status_code)
+
+    def mock_get(*args, **kwargs):  # noqa: ARG001
+        url = args[0]
+        if do_raise:
+            raise requests.exceptions.RequestException(f"Mocked error: URL: {url}")
+        response.url = url
+        return response
+
+    monkeypatch.setattr(requests, "get", mock_get)
+    return response
+
+
+@pytest.mark.usefixtures("mock_requests")
 class TestAccount:
     BASE_URL = "https://www.fio.cz/ib_api/rest"
-
-    @pytest.fixture()
-    @staticmethod
-    def account() -> Account:
-        return Account(
-            "testKeyXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36bG",
-        )
 
     @staticmethod
     def test___init__():
@@ -185,26 +201,60 @@ class TestAccount:
             with pytest.raises(ValueError, match="Token has to"):
                 Account(token)
 
-    def test__request(self, mock_response: MockResponse, account: Account):
+    @pytest.fixture()
+    @staticmethod
+    def account() -> Account:
+        return Account(
+            "testKeyXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36bG",
+        )
+
+    def test__request(self, mock_requests: MockResponse, account: Account):
         url = "/foo"
         account._request(url, None)
-        assert mock_response.url == self.BASE_URL + url
-        assert account._request(url, ASFmt.PDF) == mock_response.content
-        assert account._request(url, ASFmt.GPC) == mock_response.text
+        assert mock_requests.url == self.BASE_URL + url
+        assert account._request(url, ASFmt.PDF) == mock_requests.content
+        assert account._request(url, ASFmt.GPC) == mock_requests.text
 
-        error_msg = "Not found"
-        error_code = 404
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account._request(url, None)
-        assert excinfo.value.status_code == error_code
+    @pytest.mark.parametrize(
+        "mock_requests",
+        [{"do_raise": True}],
+        indirect=True,
+        ids=["RequestError"],
+    )
+    def test_request_error(self, account: Account):
+        with pytest.raises(RequestError) as exc_info:
+            account._request(f"/foo/{account._token}", None)
+        assert account._token not in exc_info.exconly()
 
-    def test_periods(self, mock_response: MockResponse, account: Account):
+    @pytest.mark.parametrize(
+        ("status_code", "exception"),
+        [
+            (404, InvalidRequestError),
+            (409, TimeLimitError),
+            (413, TooManyItemsError),
+            (422, AuthorizationError),
+            (500, InvalidTokenError),
+            (599, RequestError),
+        ],
+    )
+    def test_request_http_error(
+        self,
+        mock_requests: MockResponse,
+        account: Account,
+        status_code: int,
+        exception: type[RequestError],
+    ):
+        mock_requests.status_code = status_code
+        with pytest.raises(exception) as exc_info:
+            account._request(f"/foo/{account._token}", None)
+        assert account._token not in exc_info.exconly()
+
+    def test_periods(self, mock_requests: MockResponse, account: Account):
         from_date = date(2023, 1, 1)
         to_date = from_date
         fmt = TFmt.JSON
-        assert account.periods(from_date, to_date, fmt) == mock_response.text
-        assert mock_response.url == (
+        assert account.periods(from_date, to_date, fmt) == mock_requests.text
+        assert mock_requests.url == (
             f"{self.BASE_URL}/periods/{account._token}"
             f"/{from_date.isoformat()}/{to_date.isoformat()}/transactions.{fmt}"
         )
@@ -217,55 +267,47 @@ class TestAccount:
         self,
         fmt: ASFmt,
         response_attr: str,
-        mock_response: MockResponse,
+        mock_requests: MockResponse,
         account: Account,
     ):
         year = 2023
         _id = 1
-        assert account.by_id(year, _id, fmt) == getattr(mock_response, response_attr)
-        assert mock_response.url == (
+        assert account.by_id(year, _id, fmt) == getattr(mock_requests, response_attr)
+        assert mock_requests.url == (
             f"{self.BASE_URL}/by-id/{account._token}/{year}/{_id}/transactions.{fmt}"
         )
 
-    def test_last(self, mock_response: MockResponse, account: Account):
+    def test_last(self, mock_requests: MockResponse, account: Account):
         fmt = TFmt.XML
-        assert account.last(fmt) == mock_response.text
-        assert mock_response.url == (
+        assert account.last(fmt) == mock_requests.text
+        assert mock_requests.url == (
             f"{self.BASE_URL}/last/{account._token}/transactions.{fmt}"
         )
 
-    def test_set_last_id(self, mock_response: MockResponse, account: Account):
+    def test_set_last_id(self, mock_requests: MockResponse, account: Account):
         _id = 1147608196
         account.set_last_id(_id)
         assert (
-            mock_response.url == f"{self.BASE_URL}/set-last-id/{account._token}/{_id}/"
+            mock_requests.url == f"{self.BASE_URL}/set-last-id/{account._token}/{_id}/"
         )
 
-    def test_set_last_date(self, mock_response: MockResponse, account: Account):
+    def test_set_last_date(self, mock_requests: MockResponse, account: Account):
         _date = date(2023, 1, 1)
         account.set_last_date(_date)
-        assert mock_response.url == (
+        assert mock_requests.url == (
             f"{self.BASE_URL}/set-last-date/{account._token}/{_date.isoformat()}/"
         )
 
-    def test_last_statement(self, mock_response: MockResponse, account: Account):
+    def test_last_statement(self, mock_requests: MockResponse, account: Account):
         year = 2023
         _id = 1
-        mock_response.text = f"{year},{_id}"
+        mock_requests.text = f"{year},{_id}"
         assert account.last_statement() == (year, _id)
-        assert mock_response.url == (
+        assert mock_requests.url == (
             f"{self.BASE_URL}/lastStatement/{account._token}/statement"
         )
 
-    def test_request_error(self, mock_response: MockResponse, account: Account):
-        error_msg = "Invalid token"
-        error_code = 500
-        mock_response.error = (error_msg, error_code)
-        with pytest.raises(RequestError, match=error_msg) as excinfo:
-            account.last(TFmt.JSON)
-        assert excinfo.value.status_code == error_code
-
-    def test_data_error(self, mock_response: MockResponse, account: Account):
-        mock_response.text = b"bytes"  # type: ignore[assignment]
-        with pytest.raises(DataError):
+    def test_validation_error(self, mock_requests: MockResponse, account: Account):
+        mock_requests.text = b"bytes"  # type: ignore[assignment]
+        with pytest.raises(ValidationError):
             account.last(TFmt.XML)
