@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fio_banka"
-version = "1.0.3"
+dynamic = ["version"]
 authors = [{ name = "Petr Beranek", email = "petrberanek.mail@gmail.com" }]
 description = "Thin wrapper for Fio Banka, a.s. API"
 readme = "README.md"
@@ -34,6 +34,8 @@ devel = [
   "pytest-cov~=4.1",
   "types-requests~=2.31",
 ]
+
+[tool.setuptools_scm]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
