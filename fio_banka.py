@@ -8,13 +8,14 @@
 * `AccountInfo`: container for account information
 * `Transaction`: container for transaction data
 * Exceptions:
-    * `FioBankaError`: base exception for all custom exceptions
-        * `RequestError`: raised when a request error occurs
-            * `InvalidRequestError`: raised when the request (typically the URL) is invalid
-            * `TimeLimitError`: raised when the request time limit is exceeded
-            * `InvalidTokenError`: raised when the token is inactive or invalid
-            * `TooManyItemsError`: raised when the number of transactions in the request is > 50000.
-        * `ValidationError`: raised when a data validation failed
+    * `FioBankaError`: Base exception for all Fio banka exceptions.
+        * `RequestError`: An HTTP request could not be fulfilled.
+            * `InvalidRequestError`: Request (typically the URL) is invalid.
+            * `TimeLimitError`: Request time limit has been exceeded.
+            * `InvalidTokenError`: Token is inactive or invalid.
+            * `TooManyItemsError`: The number of transactions exceeds 50000.
+            * `AuthorizationError`: Token is not authorized to fetch historical data.
+        * `ValidationError`: Fetched data are invalid.
 * `str_to_date`: helper function for parsing date strings
 * `get_account_info`: helper function for getting `AccountInfo`
 * `get_transactions`: helper generator yielding `Transaction` objects
@@ -133,11 +134,11 @@ class Transaction(NamedTuple):
 
 
 class FioBankaError(Exception):
-    """Base exception for all Fio-banka exceptions."""
+    """Base exception for all Fio banka exceptions."""
 
 
 class RequestError(FioBankaError):
-    """An HTTP request cannot be fulfilled."""
+    """An HTTP request could not be fulfilled."""
 
 
 class InvalidRequestError(RequestError):
