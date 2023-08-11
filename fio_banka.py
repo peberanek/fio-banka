@@ -1,4 +1,4 @@
-"""A client and helper functions for Fio banka, a.s. API
+"""A client and helper functions for Fio banka, a.s. API.
 
 * REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
 * `Account`: client for interaction with an account
@@ -56,7 +56,7 @@ REQUEST_TIMELIMIT = 30  # seconds
 
 @unique
 class TransactionsFmt(StrEnum):
-    """Transaction report formats"""
+    """Transaction report formats."""
 
     CSV = auto()
     GPC = auto()
@@ -68,7 +68,7 @@ class TransactionsFmt(StrEnum):
 
 @unique
 class AccountStatementFmt(StrEnum):
-    """Account statement formats"""
+    """Account statement formats."""
 
     CSV = auto()
     GPC = auto()
@@ -90,7 +90,7 @@ OptionalInt = int | None
 
 
 class AccountInfo(NamedTuple):
-    """Container for account information"""
+    """Container for account information."""
 
     account_id: OptionalStr
     bank_id: OptionalStr
@@ -109,7 +109,7 @@ class AccountInfo(NamedTuple):
 
 
 class Transaction(NamedTuple):
-    """Container for transaction data"""
+    """Container for transaction data."""
 
     transaction_id: str
     date: date
@@ -145,6 +145,7 @@ class InvalidRequestError(RequestError):
     """Request (typically the URL) is invalid."""
 
     def __init__(self) -> None:
+        """Initialize the exception."""
         super().__init__(
             "Invalid request. Make sure the URL and its parameters are correct.",
         )
@@ -154,6 +155,7 @@ class TimeLimitError(RequestError):
     """Request time limit has been exceeded."""
 
     def __init__(self) -> None:
+        """Initialize the exception."""
         super().__init__(
             f"Exceeded time limit (1 request per {REQUEST_TIMELIMIT}s).",
         )
@@ -163,6 +165,7 @@ class InvalidTokenError(RequestError):
     """Token is inactive or invalid."""
 
     def __init__(self) -> None:
+        """Initialize the exception."""
         super().__init__("Invalid token. Make sure the token is active and valid.")
 
 
@@ -170,6 +173,7 @@ class TooManyItemsError(RequestError):
     """The number of transactions exceeds 50000."""
 
     def __init__(self) -> None:
+        """Initialize the exception."""
         super().__init__(
             "Too many items. Make sure the number of requested transactions is <= 50000.",
         )
@@ -179,6 +183,7 @@ class AuthorizationError(RequestError):
     """Token is not authorized to fetch historical data."""
 
     def __init__(self) -> None:
+        """Initialize the exception."""
         super().__init__(
             "Authorization error. Make sure the token is authorized to fetch"
             " data older than 90 days. Follow instructions at"
