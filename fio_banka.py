@@ -331,7 +331,7 @@ class Account:
                     exception = InvalidTokenError
                 case _:
                     raise RequestError(hide_token(str(exc))) from None
-            raise exception from exc
+            raise exception from exc  # FIXME: raise from None to hide the token
         match fmt:
             case AccountStatementFmt.PDF:
                 return response.content  # bytes

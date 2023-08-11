@@ -5,12 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fio_banka"
 version = "1.0.3"
-authors = [
-  { name = "Petr Beranek", email = "petrberanek.mail@gmail.com" },
-]
+authors = [{ name = "Petr Beranek", email = "petrberanek.mail@gmail.com" }]
 description = "Thin wrapper for Fio Banka, a.s. API"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
 keywords = ["finance", "fio", "bank", "api", "czech", "wrapper"]
 classifiers = [
@@ -23,7 +21,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-  "requests>=2.31.0,<3.0",  # manually sync with mypy deps in .pre-commit-config.yaml
+  "requests>=2.31.0,<3.0", # manually sync with mypy deps in .pre-commit-config.yaml
 ]
 
 [project.urls]
@@ -45,44 +43,42 @@ addopts = "--cov=fio_banka --cov-report term-missing"
 line-length = 100
 # https://beta.ruff.rs/docs/rules/
 select = [
-  "F",    # pyflakes
-  "E",    # pycodestyle
-  "C90",  # mccabe
-  "I",    # isort
-  "N",    # pep8-naming
-  "UP",   # pyupgrade
-  "YTT",  # flake8-2020
-  "S",    # flake8-bandit
-  "BLE",  # flake8-blind-except
-  "FBT",  # flake8-boolean-trap
-  "B",    # flake8-bugbear
-  "A",    # flake8-builtins
-  "COM",  # flake8-commas
-  "C4",   # flake8-comprehensions
-  "DTZ",  # flake8-datetimez
-  "T10",  # flake8-debugger
-  "INP",  # flake8-no-pep420
-  "PIE",  # flake8-pie
-  "T20",  # flake8-print
-  "PT",   # flake8-pytest-style
-  "Q",    # flake8-quotes
-  "RSE",  # flake8-raise
-  "RET",  # flake8-return
-  "SLF",  # flake8-self
-  "SIM",  # flake8-simplify
-  "ARG",  # flake8-unused-arguments
-  "PTH",  # flake8-use-pathlib
-  "PGH",  # pygrep-hooks
-  "PL",   # pylint
-  "TRY",  # tryceptors
-  "FLY",  # flynt
-  "RUF",  # Ruff-specific rules
+  "F",   # pyflakes
+  "E",   # pycodestyle
+  "C90", # mccabe
+  "I",   # isort
+  "N",   # pep8-naming
+  "UP",  # pyupgrade
+  "YTT", # flake8-2020
+  "S",   # flake8-bandit
+  "BLE", # flake8-blind-except
+  "FBT", # flake8-boolean-trap
+  "B",   # flake8-bugbear
+  "A",   # flake8-builtins
+  "COM", # flake8-commas
+  "C4",  # flake8-comprehensions
+  "DTZ", # flake8-datetimez
+  "T10", # flake8-debugger
+  "INP", # flake8-no-pep420
+  "PIE", # flake8-pie
+  "T20", # flake8-print
+  "PT",  # flake8-pytest-style
+  "Q",   # flake8-quotes
+  "RSE", # flake8-raise
+  "RET", # flake8-return
+  "SLF", # flake8-self
+  "SIM", # flake8-simplify
+  "ARG", # flake8-unused-arguments
+  "PTH", # flake8-use-pathlib
+  "PGH", # pygrep-hooks
+  "PL",  # pylint
+  "TRY", # tryceptors
+  "FLY", # flynt
+  "RUF", # Ruff-specific rules
 ]
 ignore = ["TRY003"]
 # These may break temporarily commented-out code
 unfixable = ["F401", "F841"]
 
 [tool.ruff.per-file-ignores]
-"tests/*" = [
-  "S101",
-]
+"tests/*" = ["S"]
