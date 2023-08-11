@@ -174,6 +174,17 @@ class TooManyItemsError(RequestError):
         )
 
 
+class AuthorizationError(RequestError):
+    """Token is not authorized to fetch historical data."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Authorization error. Make sure the token is authorized to fetch"
+            " data older than 90 days. Follow instructions at"
+            " https://www.fio.cz/docs/cz/API_Bankovnictvi.pdf, section 3.1.",
+        )
+
+
 class ValidationError(FioBankaError):
     """Fetched data are invalid."""
 
@@ -319,19 +330,21 @@ class Account:
         try:
             response.raise_for_status()
         except requests.HTTPError as exc:
-            exception: type[RequestError]
+            exception: RequestError
             match response.status_code:
                 case 404:
-                    exception = InvalidRequestError
+                    exception = InvalidRequestError()
                 case 409:
-                    exception = TimeLimitError
+                    exception = TimeLimitError()
                 case 413:
-                    exception = TooManyItemsError
+                    exception = TooManyItemsError()
+                case 422:
+                    exception = AuthorizationError()
                 case 500:
-                    exception = InvalidTokenError
+                    exception = InvalidTokenError()
                 case _:
-                    raise RequestError(hide_token(str(exc))) from None
-            raise exception from exc  # FIXME: raise from None to hide the token
+                    exception = RequestError(hide_token(str(exc)))
+            raise exception from None
         match fmt:
             case AccountStatementFmt.PDF:
                 return response.content  # bytes

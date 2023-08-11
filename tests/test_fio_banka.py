@@ -10,6 +10,7 @@ import requests
 from fio_banka import (
     Account,
     AccountInfo,
+    AuthorizationError,
     InvalidRequestError,
     InvalidTokenError,
     RequestError,
@@ -231,6 +232,7 @@ class TestAccount:
             (404, InvalidRequestError),
             (409, TimeLimitError),
             (413, TooManyItemsError),
+            (422, AuthorizationError),
             (500, InvalidTokenError),
             (599, RequestError),
         ],
