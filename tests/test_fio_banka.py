@@ -157,7 +157,7 @@ class MockResponse:
         if 400 <= self.status_code < 600:  # noqa: PLR2004
             raise requests.HTTPError(
                 f"{self.status_code} Mocked error for url: {self.url}",
-                response=self,
+                response=None,
             )
 
 
