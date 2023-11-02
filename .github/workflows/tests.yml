@@ -4,7 +4,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repo
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -14,6 +15,6 @@ jobs:
           python3 -m pip install --upgrade pipenv
           # Not using `--deploy` here. Updates should be handled by a bot.
           pipenv install --dev
-      - name: Test with pytest
+      - name: Run tests
         run: |
           pipenv run pytest
