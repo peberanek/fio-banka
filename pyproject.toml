@@ -20,20 +20,9 @@ classifiers = [
   "Topic :: Communications",
   "Topic :: Office/Business :: Financial",
 ]
-dependencies = [
-  "requests~=2.31", # manually sync with mypy deps in .pre-commit-config.yaml
-]
 
 [project.urls]
 Homepage = "https://github.com/peberanek/fio-banka"
-
-[project.optional-dependencies]
-devel = [
-  "pre-commit~=3.3",
-  "pytest~=7.3",
-  "pytest-cov~=4.1",
-  "types-requests~=2.31",
-]
 
 [tool.setuptools_scm]
 
@@ -42,44 +31,75 @@ testpaths = ["tests"]
 addopts = "--cov=fio_banka --cov-report term-missing"
 
 [tool.ruff]
+# Configuration: https://docs.astral.sh/ruff/configuration/
+# Rules: https://docs.astral.sh/ruff/rules/
+
 line-length = 100
-# https://beta.ruff.rs/docs/rules/
+
 select = [
-  "F",   # pyflakes
-  "E",   # pycodestyle
-  "C90", # mccabe
-  "I",   # isort
-  "N",   # pep8-naming
-  "D",   # pydocstyle
-  "UP",  # pyupgrade
-  "YTT", # flake8-2020
-  "S",   # flake8-bandit
-  "BLE", # flake8-blind-except
-  "FBT", # flake8-boolean-trap
-  "B",   # flake8-bugbear
-  "A",   # flake8-builtins
-  "COM", # flake8-commas
-  "C4",  # flake8-comprehensions
-  "DTZ", # flake8-datetimez
-  "T10", # flake8-debugger
-  "INP", # flake8-no-pep420
-  "PIE", # flake8-pie
-  "T20", # flake8-print
-  "PT",  # flake8-pytest-style
-  "Q",   # flake8-quotes
-  "RSE", # flake8-raise
-  "RET", # flake8-return
-  "SLF", # flake8-self
-  "SIM", # flake8-simplify
-  "ARG", # flake8-unused-arguments
-  "PTH", # flake8-use-pathlib
-  "PGH", # pygrep-hooks
-  "PL",  # pylint
-  "TRY", # tryceptors
-  "FLY", # flynt
-  "RUF", # Ruff-specific rules
+  "F",      # Pyflakes
+  "E",      # pycodestyle
+  "C90",    # mccabe
+  "I",      # isort
+  "N",      # pep8-naming
+  "D",      # pydocstyle
+  "UP",     # pyupgrade
+  "YTT",    # flake8-2020
+  "S",      # flake8-bandit
+  "BLE",    # flake8-blind-except
+  "FBT",    # flake8-boolean-trap
+  "B",      # flake8-bugbear
+  "A",      # flake8-builtins
+  "COM",    # flake8-commas
+  "C4",     # flake8-comprehensions
+  "T10",    # flake8-debugger
+  "EXE",    # flake8-executable
+  "FA",     # flake8-future-annotations
+  "ISC",    # flake8-implicit-str-concat
+  "G",      # flake8-logging-format
+  "INP",    # flake8-no-pep420
+  "PIE",    # flake8-pie
+  "T20",    # flake8-print
+  "PT",     # flake8-pytest-style
+  "Q",      # flake8-quotes
+  "RSE",    # flake8-raise
+  "RET",    # flake8-return
+  "SLF",    # flake8-self
+  "SIM",    # flake8-simplify
+  "TCH",    # flake8-type-checking
+  "INT",    # flake8-gettext
+  "ARG",    # flake8-unused-arguments
+  "PTH",    # flake8-use-pathlib
+  "FIX001", # flake8-fixme
+  "FIX003", # flake8-fixme
+  "PGH",    # pygrep-hooks
+  "PL",     # pylint
+  "TRY",    # tryceptors
+  "FLY",    # flynt
+  "PERF",   # Perflint
+  "RUF",    # Ruff-specific rules
 ]
-ignore = ["TRY003"]
+
+ignore = [
+    # Conflicting formatter rules (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q000",
+  "Q001",
+  "Q002",
+  "Q003",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
+  # Other
+  "TRY003",
+]
+
 unfixable = [
   # These may break temporarily commented-out code
   "F401",

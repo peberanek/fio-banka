@@ -280,16 +280,12 @@ class TestAccount:
     def test_last(self, mock_requests: MockResponse, account: Account):
         fmt = TFmt.XML
         assert account.last(fmt) == mock_requests.text
-        assert mock_requests.url == (
-            f"{self.BASE_URL}/last/{account._token}/transactions.{fmt}"
-        )
+        assert mock_requests.url == f"{self.BASE_URL}/last/{account._token}/transactions.{fmt}"
 
     def test_set_last_id(self, mock_requests: MockResponse, account: Account):
         _id = 1147608196
         account.set_last_id(_id)
-        assert (
-            mock_requests.url == f"{self.BASE_URL}/set-last-id/{account._token}/{_id}/"
-        )
+        assert mock_requests.url == f"{self.BASE_URL}/set-last-id/{account._token}/{_id}/"
 
     def test_set_last_date(self, mock_requests: MockResponse, account: Account):
         _date = date(2023, 1, 1)
@@ -303,9 +299,7 @@ class TestAccount:
         _id = 1
         mock_requests.text = f"{year},{_id}"
         assert account.last_statement() == (year, _id)
-        assert mock_requests.url == (
-            f"{self.BASE_URL}/lastStatement/{account._token}/statement"
-        )
+        assert mock_requests.url == f"{self.BASE_URL}/lastStatement/{account._token}/statement"
 
     def test_validation_error(self, mock_requests: MockResponse, account: Account):
         mock_requests.text = b"bytes"  # type: ignore[assignment]

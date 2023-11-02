@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+# Make sure Mypy deps in .pre-commit-config.yaml are in sync.
+requests = "~=2.31"
+
+[dev-packages]
+fio-banka = {editable = true, path = "."}
+pre-commit = "~=3.3"
+pytest = "~=7.3"
+pytest-cov = "~=4.1"
+types-requests = "~=2.31"
+
+[requires]
+python_version = "3.11"
