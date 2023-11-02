@@ -11,9 +11,9 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          pip install wheel
-          pip install .[devel]
+          python3 -m pip install --upgrade pipenv
+          # Not using `--deploy` here. Updates should be handled by a bot.
+          pipenv install --dev
       - name: Test with pytest
         run: |
-          pytest
+          pipenv run pytest
