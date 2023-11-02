@@ -26,5 +26,4 @@ repos:
     rev: v1.6.1
     hooks:
       - id: mypy
-        # manually sync with deps in pyproject.toml
         additional_dependencies: ["types-requests~=2.31"]

@@ -116,12 +116,14 @@ Transaction(
 
 ## Contributing
 
-Build and activate development environment:
+Set up development environment via [Pipenv](https://pipenv.pypa.io/en/latest/):
 ```bash
-./build_venv
-source venv/bin/activate
-pre-commit install  # https://pre-commit.com/
+pipenv install --dev
+pipenv run pre-commit install
 ```
+
+> [!NOTE]
+> If you prefer to create the virtual environment in the project's directory, add `PIPENV_VENV_IN_PROJECT=1` into `.env` file. For more info see [Virtualenv mapping caveat](https://pipenv.pypa.io/en/latest/installation/#virtualenv-mapping-caveat).
 
 Run tests:
 ```bash
