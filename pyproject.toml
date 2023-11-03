@@ -20,6 +20,9 @@ classifiers = [
   "Topic :: Communications",
   "Topic :: Office/Business :: Financial",
 ]
+# Make sure deps (e.g. for Mypy) in Pipfile and .pre-commit-config.yaml are
+# in sync.
+dependencies = ["requests~=2.31"]
 
 [project.urls]
 Homepage = "https://github.com/peberanek/fio-banka"

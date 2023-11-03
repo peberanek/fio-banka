@@ -118,7 +118,7 @@ Transaction(
 
 Set up development environment via [Pipenv](https://pipenv.pypa.io/en/latest/):
 ```bash
-pipenv install --dev
+pipenv install --dev -e .
 pipenv run pre-commit install
 ```
 
