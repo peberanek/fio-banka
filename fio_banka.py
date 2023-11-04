@@ -1,9 +1,9 @@
-"""A client and helper functions for Fio banka, a.s. API.
+"""Fio Banka API Client.
 
 * REQUEST_TIMELIMIT (int): time limit in seconds for 1 API request
-* `Account`: client for interaction with an account
-* `TransactionsFmt`: enum of transaction report formats consumed by `Account` methods
-* `AccountStatementFmt`: enum of account statement formats consumed by `Account` methods
+* `Account`: the client for interaction with an account
+* `TransactionsFmt`: enum of transaction report formats
+* `AccountStatementFmt`: enum of account statement formats
 * Type aliases: `Fmt` and a couple of `Optional*` types
 * `AccountInfo`: container for account information
 * `Transaction`: container for transaction data
@@ -16,13 +16,13 @@
             * `TooManyItemsError`: The number of transactions exceeds 50000.
             * `AuthorizationError`: Token is not authorized to fetch historical data.
         * `ValidationError`: Fetched data are invalid.
-* `str_to_date`: helper function for parsing date strings
-* `get_account_info`: helper function for getting `AccountInfo`
-* `get_transactions`: helper generator yielding `Transaction` objects
+* `str_to_date`: function for parsing date strings
+* `get_account_info`: function for getting `AccountInfo`
+* `get_transactions`: generator yielding `Transaction` objects
 
 Basic usage:
     >>> from fio_banka import Account, TransactionsFmt, get_account_info, get_transactions
-    >>> account = Account("<API-token>")
+    >>> account = Account("<your-API-token>")
     >>> data = account.last(TransactionsFmt.JSON)
     >>> get_account_info(data)
     AccountInfo(

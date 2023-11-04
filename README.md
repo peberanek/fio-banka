@@ -6,49 +6,36 @@
 [![image](https://github.com/peberanek/fio-banka/actions/workflows/tests.yml/badge.svg)](https://github.com/peberanek/fio-banka/actions/workflows/tests.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/peberanek/fio-banka/main.svg)](https://results.pre-commit.ci/latest/github/peberanek/fio-banka/main)
 
-Client for [Fio Banka, a.s. API](https://www.fio.cz/bank-services/internetbanking-api). Inspired by Honza Javorek's [fiobank](https://github.com/honzajavorek/fiobank).
+Inspired by Honza Javorek's [fiobank](https://github.com/honzajavorek/fiobank).
 
-## Description
+Features:
 
-This client is useful if you need to parse account info and transactions in 1 request (Fio banka imposes a limit of 1 request per 30 seconds) or if you want to fetch raw data (text or binary - e.g. PDF).
+* safer data types (money as `Decimal` instead of `float`),
+* access to raw data (text or binary - i.e. PDF reports),
+* parse both account and transactions info in 1 request (Fio banka imposes a limit of 1 request per 30 seconds).
 
-Currently, merchant transaction report and order upload are not implemented. Feel free to send a PR (I believe they should be reasonably easy to implement).
+Fio banka API docs:
 
-### Fio Banka API documentation:
+* [General info](https://www.fio.cz/bank-services/internetbanking-api)
 * [Specification](https://www.fio.cz/docs/cz/API_Bankovnictvi.pdf) (Czech only)
 * [XSD Schema](https://www.fio.cz/xsd/IBSchema.xsd)
 
-## Installation
-
-```
-pip install fio-banka
-```
+> [!NOTE]
+> Merchant transaction report and order upload are not implemented. Feel free to send a PR.
 
 ## Usage
 
+Fetch raw data:
 ```python
->>> from datetime import date
 >>> import fio_banka
-
->>> account = fio_banka.Account("<API-token>")
+>>> account = fio_banka.Account("<your-API-token>")
 >>> fmt = fio_banka.TransactionsFmt.JSON
->>> account.periods(date(2023, 1, 1), date(2023, 1, 2), fmt)
-'{"accountStatement":{"info":{"accountId": ...(long output)... '
-
->>> try:
->>>     account.last(fmt)
->>> except fio_banka.RequestError as exc:
->>>     print(exc)
-Exceeded time limit (1 request per 30s).
-
->>> import time
->>> time.sleep(fio_banka.REQUEST_TIMELIMIT)
->>> data = account.last(fmt)
+>>> data = account.periods(date(2023, 1, 1), date(2023, 1, 2), fmt)
 >>> data
 '{"accountStatement":{"info":{"accountId": ...(long output)... '
 ```
 
-Data extraction (make sure data are downloaded as *JSON*):
+Parse data (*JSON only*):
 ```python
 >>> fio_banka.get_account_info(data)
 AccountInfo(
@@ -67,7 +54,7 @@ AccountInfo(
     id_to=10000000002,
     id_last_download=None
 )
->>> list(fio_banka.get_transactions(data))[:2]
+>>> next(iter(fio_banka.get_transactions(data)))
 Transaction(
     transaction_id='10000000000',
     date=datetime.date(2023, 1, 1),
@@ -90,28 +77,26 @@ Transaction(
     order_id=30000000000,
     payer_reference=None
 )
-Transaction(
-    transaction_id="10000000001",
-    date=datetime.date(2023, 1, 2),
-    amount=Decimal("-1500.89"),
-    currency="CZK",
-    account_id="9876543210",
-    account_name="",
-    bank_id="0800",
-    bank_name="Česká spořitelna, a.s.",
-    ks="0558",
-    vs="0001",
-    ss="0002",
-    user_identification=None,
-    remittance_info=None,  # Zprava pro prijemce
-    type="Okamžitá odchozí platba",
-    executor="Novák, Jan",
-    specification=None,
-    comment=None,
-    bic=None,
-    order_id=30000000001,
-    payer_reference=None,
-)
+```
+
+Handle errors:
+```python
+>>> try:
+>>>     account.last(fmt)
+>>> except fio_banka.RequestError as exc:
+>>>     print(exc)
+Exceeded time limit (1 request per 30s).
+
+>>> import time
+>>> time.sleep(fio_banka.REQUEST_TIMELIMIT)
+>>> account.last(fmt)
+'{"accountStatement":{"info":{"accountId": ...(long output)... '
+```
+
+## Installation
+
+```
+pip install fio-banka
 ```
 
 ## Contributing
