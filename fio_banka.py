@@ -124,7 +124,7 @@ class Transaction(NamedTuple):
     ss: OptionalStr
     user_identification: OptionalStr
     remittance_info: OptionalStr
-    type: OptionalStr  # noqa: A003
+    type: OptionalStr
     executor: OptionalStr
     specification: OptionalStr
     comment: OptionalStr
