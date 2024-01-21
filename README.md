@@ -103,7 +103,7 @@ pip install fio-banka
 
 Set up development environment via [Pipenv](https://pipenv.pypa.io/en/latest/):
 ```bash
-pipenv install --dev -e .
+pipenv sync --dev
 pipenv run pre-commit install
 ```
 
