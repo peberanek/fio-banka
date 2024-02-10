@@ -1,307 +1,350 @@
-# ruff: noqa: SLF001
+"""Test the `fio_banka` module.
+
+Notes:
+    * There does not seem to be an easy way to test GPC format encoding
+        (cp1250). Therefore, the encoding is not tested.
+    * Official API docs don't limit year or date values. We don't want
+        to speculate, therefore they are not tested. Sanity checks only.
+    * Tests of invalid formats (account statement, transaction report) are
+        covered by:
+        `TestAccount.test_fetch_transaction_report_for_period_with_invalid_format`,
+        `TestAccount.test_fetch_account_statement_with_invalid_format`.
+    * Tests of `AccountInfo` and `Transaction` objects are covered by `Account`
+        tests.
+"""
+import datetime
+import decimal
 import os
-from datetime import date
-from decimal import Decimal
-from pathlib import Path
+import pathlib
 
 import pytest
 import requests
 
-from fio_banka import (
-    Account,
-    AccountInfo,
-    AuthorizationError,
-    InvalidRequestError,
-    InvalidTokenError,
-    RequestError,
-    TimeLimitError,
-    TooManyItemsError,
-    Transaction,
-    ValidationError,
-    get_account_info,
-    get_transactions,
-    str_to_date,
-)
-from fio_banka import AccountStatementFmt as ASFmt
-from fio_banka import TransactionsFmt as TFmt
+# Avoid shadowing by pytest fixture of the same name
+import requests_mock as _requests_mock
 
-THIS_DIR = Path(os.path.realpath(__file__)).parent
+import fio_banka
 
 
-@pytest.fixture()
-def transactions():
-    with (THIS_DIR / "transactions.json").open(encoding="utf-8") as file:
-        return file.read()
+def test_constants_are_present():
+    assert hasattr(fio_banka, "REQUEST_TIMELIMIT_IN_SECONDS")
 
 
-def test_str_to_date():
-    assert str_to_date("2023-01-01+0100") == date(2023, 1, 1)
-    with pytest.raises(ValueError, match="Invalid isoformat"):
-        str_to_date("2023-01")
-
-
-def test_get_account_info(transactions):
-    assert get_account_info(transactions) == AccountInfo(
-        account_id="2000000000",
-        bank_id="2010",
-        currency="CZK",
-        iban="CZ1000000000002000000000",
-        bic="FIOBCZPPXXX",
-        opening_balance=Decimal("4000.99"),
-        closing_balance=Decimal("1000.10"),
-        date_start=date(2023, 1, 1),
-        date_end=date(2023, 1, 3),
-        year_list=None,
-        id_list=None,
-        id_from=10000000000,
-        id_to=10000000002,
-        id_last_download=None,
+def test_transaction_report_formats():
+    """Test that all supported transaction report formats are present."""
+    assert sorted([member.value for member in fio_banka.TransactionReportFmt]) == sorted(
+        ["csv", "gpc", "html", "json", "ofx", "xml"]
     )
-    with pytest.raises(ValueError, match="Expecting value"):
-        get_account_info("")
-    with pytest.raises(ValueError, match="Missing key"):
-        get_account_info("{}")
 
 
-def test_get_transactions(transactions):
-    txns = list(get_transactions(transactions))
-    # Check there are 3 unique transactions
-    assert len({txn.transaction_id for txn in txns}) == len(txns) == 3  # noqa: PLR2004
-    for txn in txns:
-        match txn.transaction_id:
-            case "10000000000":
-                assert txn == Transaction(
-                    transaction_id="10000000000",
-                    date=date(2023, 1, 1),
-                    amount=Decimal("-2000.00"),
-                    currency="CZK",
-                    account_id=None,
-                    account_name="",
-                    bank_id=None,
-                    bank_name=None,
-                    ks=None,
-                    vs="1000",
-                    ss=None,
-                    user_identification="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
-                    remittance_info="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
-                    type="Platba kartou",
-                    executor="Novák, Jan",
-                    specification=None,
-                    comment="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
-                    bic=None,
-                    order_id=30000000000,
-                    payer_reference=None,
-                )
-            case "10000000001":
-                assert txn == Transaction(
-                    transaction_id="10000000001",
-                    date=date(2023, 1, 2),
-                    amount=Decimal("-1500.89"),
-                    currency="CZK",
-                    account_id="9876543210",
-                    account_name="",
-                    bank_id="0800",
-                    bank_name="Česká spořitelna, a.s.",
-                    ks="0558",
-                    vs="0001",
-                    ss="0002",
-                    user_identification=None,
-                    remittance_info=None,
-                    type="Okamžitá odchozí platba",
-                    executor="Novák, Jan",
-                    specification=None,
-                    comment=None,
-                    bic=None,
-                    order_id=30000000001,
-                    payer_reference=None,
-                )
-            case "10000000002":
-                assert txn == Transaction(
-                    transaction_id="10000000002",
-                    date=date(2023, 1, 3),
-                    amount=Decimal("500.00"),
-                    currency="CZK",
-                    account_id="2345678901",
-                    account_name="Pavel, Žák",
-                    bank_id="2010",
-                    bank_name="Fio banka, a.s.",
-                    ks=None,
-                    vs=None,
-                    ss=None,
-                    user_identification=None,
-                    remittance_info=None,
-                    type="Příjem převodem uvnitř banky",
-                    executor=None,
-                    specification="test specification",
-                    comment=None,
-                    bic="TESTBICXXXX",
-                    order_id=30000000002,
-                    payer_reference="test payer reference",
-                )
-            case _ as _id:
-                pytest.fail(f"Unexpected transaction ID: {_id}")
-    with pytest.raises(ValueError, match="Expecting value"):
-        list(get_transactions(""))
-    with pytest.raises(ValueError, match="Missing key"):
-        list(get_transactions("{}"))
+def test_account_statement_formats():
+    """Test that all supported transaction report formats are present."""
+    assert sorted([member.value for member in fio_banka.AccountStatementFmt]) == sorted(
+        ["csv", "gpc", "html", "json", "ofx", "xml", "pdf", "mt940", "cba_xml", "sba_xml"]
+    )
 
 
-class MockResponse:
-    def __init__(self, status_code: int) -> None:
-        self.content: bytes = b"content"
-        self.text: str = "text"
-        self.url: str | None = None
-        self.status_code = status_code
-
-    def raise_for_status(self) -> None:
-        if 400 <= self.status_code < 600:  # noqa: PLR2004
-            raise requests.HTTPError(
-                f"{self.status_code} Mocked error for url: {self.url}",
-                response=None,
-            )
-
-
-@pytest.fixture()
-def mock_requests(
-    monkeypatch: pytest.MonkeyPatch,
-    request: pytest.FixtureRequest,
-) -> MockResponse:
-    """Mock the `requests` pkg.
-
-    Param:
-        dict: {
-            "status_code": int,  # an HTTP status code
-            "do_raise": bool  # raise a request exception
-        }
-    """
-    param = getattr(request, "param", {})
-    status_code = param.get("status_code", 200)
-    do_raise = param.get("do_raise", False)
-    response = MockResponse(status_code)
-
-    def mock_get(*args, **kwargs):  # noqa: ARG001
-        url = args[0]
-        if do_raise:
-            raise requests.exceptions.RequestException(f"Mocked error: URL: {url}")
-        response.url = url
-        return response
-
-    monkeypatch.setattr(requests, "get", mock_get)
-    return response
+def test_exceptions_are_present():
+    assert sorted([e for e in dir(fio_banka) if e.endswith("Error")]) == sorted(
+        [
+            "FioBankaError",
+            "RequestError",
+            "InvalidRequestError",
+            "TimeLimitError",
+            "InvalidTokenError",
+            "TooManyItemsError",
+            "AuthorizationError",
+        ]
+    )
 
 
-@pytest.mark.usefixtures("mock_requests")
 class TestAccount:
     BASE_URL = "https://www.fio.cz/ib_api/rest"
-
-    @staticmethod
-    def test___init__():
-        Account("x" * 64)
-        for token in ("x" * 63, "x" * 65):
-            with pytest.raises(ValueError, match="Token has to"):
-                Account(token)
+    TOKEN = "testTokenXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36"
 
     @pytest.fixture()
-    @staticmethod
-    def account() -> Account:
-        return Account(
-            "testKeyXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36bG",
-        )
+    def account(self) -> fio_banka.Account:
+        return fio_banka.Account(self.TOKEN)
 
-    def test__request(self, mock_requests: MockResponse, account: Account):
-        url = "/foo"
-        account._request(url, None)
-        assert mock_requests.url == self.BASE_URL + url
-        assert account._request(url, ASFmt.PDF) == mock_requests.content
-        assert account._request(url, ASFmt.GPC) == mock_requests.text
+    @staticmethod
+    @pytest.fixture()
+    def account_statement() -> str:
+        this_dir = pathlib.Path(os.path.realpath(__file__)).parent
+        with (this_dir / "account_statement.json").open("r") as f:
+            return f.read()
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "token",
+        [TOKEN, "", TOKEN[:-1], TOKEN + "x"],
+        ids=["valid", "empty", "too-short", "too-long"],
+    )
+    def test_token_length(token: str):
+        """Test that a token with invalid length is refused."""
+        if len(token) == 64:  # noqa: PLR2004
+            fio_banka.Account(token)
+        else:
+            with pytest.raises(ValueError, match="Invalid token length"):
+                fio_banka.Account(token)
 
     @pytest.mark.parametrize(
-        "mock_requests",
-        [{"do_raise": True}],
-        indirect=True,
-        ids=["RequestError"],
+        "fmt", [fio_banka.TransactionReportFmt.JSON, fio_banka.TransactionReportFmt.XML]
     )
-    def test_request_error(self, account: Account):
-        with pytest.raises(RequestError) as exc_info:
-            account._request(f"/foo/{account._token}", None)
-        assert account._token not in exc_info.exconly()
+    def test_fetch_transaction_report_for_period(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+        fmt: fio_banka.TransactionReportFmt,
+    ):
+        """Test the method `fetch_transaction_report_for_period`.
 
+        The method should call correct URL and return text data.
+        """
+        text = "dummy text"
+        requests_mock.get(
+            self.BASE_URL + f"/periods/{self.TOKEN}/2023-01-01/2023-01-02/transactions.{fmt}",
+            text=text,
+        )
+        assert (
+            account.fetch_transaction_report_for_period(
+                datetime.date(2023, 1, 1), datetime.date(2023, 1, 2), fmt
+            )
+            == text
+        )
+
+    @staticmethod
+    def test_fetch_transaction_report_for_period_with_invalid_date(
+        account: fio_banka.Account, requests_mock: _requests_mock.Mocker
+    ):
+        """Test that an invalid date range is refused."""
+        requests_mock.get(_requests_mock.ANY)
+        with pytest.raises(ValueError, match="Invalid date"):
+            account.fetch_transaction_report_for_period(
+                datetime.date(2023, 1, 2),
+                datetime.date(2023, 1, 1),
+                fio_banka.TransactionReportFmt.JSON,
+            )
+
+    @staticmethod
+    @pytest.mark.parametrize("fmt", ["", "foo"], ids=["empty", "invalid"])
+    def test_fetch_transaction_report_for_period_with_invalid_format(
+        account: fio_banka.Account, fmt: str, requests_mock: _requests_mock.Mocker
+    ):
+        """Test that an invalid or unsupported data format is refused."""
+        requests_mock.get(_requests_mock.ANY)
+        with pytest.raises(ValueError, match="Invalid format"):
+            account.fetch_transaction_report_for_period(
+                datetime.date(2023, 1, 1),
+                datetime.date(2023, 1, 1),
+                fmt,  # type: ignore[reportArgumentType,arg-type]
+            )
+
+    @pytest.mark.parametrize(
+        "fmt",
+        [
+            fio_banka.AccountStatementFmt.JSON,
+            fio_banka.AccountStatementFmt.GPC,
+            fio_banka.AccountStatementFmt.PDF,
+        ],
+    )
+    def test_fetch_account_statement(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+        fmt: fio_banka.AccountStatementFmt,
+    ):
+        """Test the method `fetch_account_statement`.
+
+        The method should call correct URL and return text or binary data.
+        """
+        url = self.BASE_URL + f"/by-id/{self.TOKEN}/2023/1/transactions.{fmt}"
+        payload: str | bytes
+        if fmt == fio_banka.AccountStatementFmt.PDF:
+            payload = b"dummy bytes"
+            requests_mock.get(url, content=payload)
+        else:
+            payload = "dummy text"
+            requests_mock.get(url, text=payload)
+        assert account.fetch_account_statement(2023, 1, fmt) == payload
+
+    @staticmethod
+    def test_fetch_account_statement_with_invalid_id(
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+    ):
+        """Test that negative ID is refused."""
+        requests_mock.get(_requests_mock.ANY)
+        with pytest.raises(ValueError, match="Invalid statement ID"):
+            account.fetch_account_statement(2023, -1, fio_banka.AccountStatementFmt.JSON)
+
+    @staticmethod
+    @pytest.mark.parametrize("fmt", ["", "bar"], ids=["empty", "invalid"])
+    def test_fetch_account_statement_with_invalid_format(
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+        fmt: str,
+    ):
+        """Test that an invalid or unsupported data format is refused."""
+        requests_mock.get(_requests_mock.ANY)
+        with pytest.raises(ValueError, match="Invalid format"):
+            account.fetch_account_statement(2023, 1, fmt)  # type: ignore[reportArgumentType,arg-type]
+
+    @pytest.mark.parametrize(
+        "fmt", [fio_banka.TransactionReportFmt.HTML, fio_banka.TransactionReportFmt.OFX]
+    )
+    def test_fetch_transaction_report_since_last_download(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+        fmt: fio_banka.TransactionReportFmt,
+    ):
+        """Test the method `fetch_transaction_report_since_last_download`.
+
+        The method should call correct URL and return text data.
+        """
+        text = "dummy text"
+        requests_mock.get(self.BASE_URL + f"/last/{self.TOKEN}/transactions.{fmt}", text=text)
+        assert account.fetch_transaction_report_since_last_download(fmt) == text
+
+    def test_fetch_last_account_statement_info(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+    ):
+        """Test the method `fetch_last_account_statement_info`.
+
+        The method should call correct URL and return a tuple with year and ID
+        of the last account statement.
+        """
+        requests_mock.get(self.BASE_URL + f"/lastStatement/{self.TOKEN}/statement", text="2023,12")
+        assert account.fetch_last_account_statement_info() == (2023, 12)
+
+    def test_set_last_downloaded_transaction_id(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+    ):
+        """Test the method `set_last_downloaded_transaction_id`.
+
+        It should only call correct URL. No return value is expected.
+        """
+        transaction_id = 10000000000
+        requests_mock.get(self.BASE_URL + f"/set-last-id/{self.TOKEN}/{transaction_id}/")
+        account.set_last_downloaded_transaction_id(transaction_id)
+
+    def test_set_last_downloaded_transaction_id_with_invalid_id(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+    ):
+        """Test that an invalid ID is refused."""
+        requests_mock.get(_requests_mock.ANY)
+        with pytest.raises(ValueError, match="Invalid transaction ID"):
+            account.set_last_downloaded_transaction_id(-1)
+
+    def test_set_last_unsuccessful_download_date(
+        self,
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
+    ):
+        """Test the method `set_last_unsuccessful_download_date`.
+
+        It should only call correct URL. No return value is expected.
+        """
+        requests_mock.get(self.BASE_URL + f"/set-last-date/{self.TOKEN}/2023-12-31/")
+        account.set_last_unsuccessful_download_date(datetime.date(2023, 12, 31))
+
+    @staticmethod
+    def test_parse_account_info(account_statement: str):
+        """Test the method `parse_account_info`.
+
+        It should parse a JSON string and return an object representing account
+        information.
+        """
+        assert fio_banka.Account.parse_account_info(account_statement) == fio_banka.AccountInfo(
+            account_id="2000000000",
+            bank_id="2010",
+            currency="CZK",
+            iban="CZ1000000000002000000000",
+            bic="FIOBCZPPXXX",
+            opening_balance=decimal.Decimal("4000.99"),
+            closing_balance=decimal.Decimal("1000.10"),
+            date_start=datetime.date(2023, 1, 1),
+            date_end=datetime.date(2023, 1, 3),
+            year_list=None,
+            id_list=None,
+            id_from=10000000000,
+            id_to=10000000002,
+            id_last_download=None,
+        )
+
+    @staticmethod
+    def test_parse_transactions(account_statement: str):
+        """Test the method `parse_transactions`.
+
+        It should parse a JSON string and return generator yielding objects
+        representing individual transactions.
+        """
+        txns = list(fio_banka.Account.parse_transactions(account_statement))
+        total_txns = 3
+        assert total_txns == len(txns) == len({txn.transaction_id for txn in txns})
+        assert txns[0] == fio_banka.Transaction(
+            transaction_id="10000000000",
+            date=datetime.date(2023, 1, 1),
+            amount=decimal.Decimal("-2000.00"),
+            currency="CZK",
+            account_id=None,
+            account_name="",
+            bank_id=None,
+            bank_name=None,
+            ks=None,
+            vs="1000",
+            ss=None,
+            user_identification="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
+            remittance_info="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
+            type="Platba kartou",
+            executor="Novák, Jan",
+            specification=None,
+            comment="Nákup: example.com, dne 31.12.2022, částka  2000.00 CZK",
+            bic=None,
+            order_id=30000000000,
+            payer_reference=None,
+        )
+
+    @staticmethod
+    def test_request_timeout(account: fio_banka.Account, requests_mock: _requests_mock.Mocker):
+        """Test that a proper exception is raised on a request timeout."""
+        requests_mock.get(_requests_mock.ANY, exc=requests.exceptions.ConnectTimeout)
+        with pytest.raises(fio_banka.InvalidRequestError):
+            account.fetch_transaction_report_for_period(
+                datetime.date(2023, 1, 1),
+                datetime.date(2023, 1, 1),
+                fio_banka.TransactionReportFmt.JSON,
+            )
+
+    @staticmethod
     @pytest.mark.parametrize(
         ("status_code", "exception"),
         [
-            (404, InvalidRequestError),
-            (409, TimeLimitError),
-            (413, TooManyItemsError),
-            (422, AuthorizationError),
-            (500, InvalidTokenError),
-            (599, RequestError),
+            (404, fio_banka.InvalidRequestError),
+            (409, fio_banka.TimeLimitError),
+            (413, fio_banka.TooManyItemsError),
+            (422, fio_banka.AuthorizationError),
+            (500, fio_banka.InvalidTokenError),
+            (599, fio_banka.RequestError),
         ],
     )
-    def test_request_http_error(
-        self,
-        mock_requests: MockResponse,
-        account: Account,
+    def test_request_error_status_codes(
+        account: fio_banka.Account,
+        requests_mock: _requests_mock.Mocker,
         status_code: int,
-        exception: type[RequestError],
+        exception: type[fio_banka.FioBankaError],
     ):
-        mock_requests.status_code = status_code
-        with pytest.raises(exception) as exc_info:
-            account._request(f"/foo/{account._token}", None)
-        assert account._token not in exc_info.exconly()
-
-    def test_periods(self, mock_requests: MockResponse, account: Account):
-        from_date = date(2023, 1, 1)
-        to_date = from_date
-        fmt = TFmt.JSON
-        assert account.periods(from_date, to_date, fmt) == mock_requests.text
-        assert mock_requests.url == (
-            f"{self.BASE_URL}/periods/{account._token}"
-            f"/{from_date.isoformat()}/{to_date.isoformat()}/transactions.{fmt}"
-        )
-
-    @pytest.mark.parametrize(
-        ("fmt", "response_attr"),
-        [(ASFmt.PDF, "content"), (ASFmt.XML, "text")],
-    )
-    def test_by_id(
-        self,
-        fmt: ASFmt,
-        response_attr: str,
-        mock_requests: MockResponse,
-        account: Account,
-    ):
-        year = 2023
-        _id = 1
-        assert account.by_id(year, _id, fmt) == getattr(mock_requests, response_attr)
-        assert mock_requests.url == (
-            f"{self.BASE_URL}/by-id/{account._token}/{year}/{_id}/transactions.{fmt}"
-        )
-
-    def test_last(self, mock_requests: MockResponse, account: Account):
-        fmt = TFmt.XML
-        assert account.last(fmt) == mock_requests.text
-        assert mock_requests.url == f"{self.BASE_URL}/last/{account._token}/transactions.{fmt}"
-
-    def test_set_last_id(self, mock_requests: MockResponse, account: Account):
-        _id = 1147608196
-        account.set_last_id(_id)
-        assert mock_requests.url == f"{self.BASE_URL}/set-last-id/{account._token}/{_id}/"
-
-    def test_set_last_date(self, mock_requests: MockResponse, account: Account):
-        _date = date(2023, 1, 1)
-        account.set_last_date(_date)
-        assert mock_requests.url == (
-            f"{self.BASE_URL}/set-last-date/{account._token}/{_date.isoformat()}/"
-        )
-
-    def test_last_statement(self, mock_requests: MockResponse, account: Account):
-        year = 2023
-        _id = 1
-        mock_requests.text = f"{year},{_id}"
-        assert account.last_statement() == (year, _id)
-        assert mock_requests.url == f"{self.BASE_URL}/lastStatement/{account._token}/statement"
-
-    def test_validation_error(self, mock_requests: MockResponse, account: Account):
-        mock_requests.text = b"bytes"  # type: ignore[assignment]
-        with pytest.raises(ValidationError):
-            account.last(TFmt.XML)
+        """Test that a proper exception is raised in case of a request error."""
+        requests_mock.get(_requests_mock.ANY, status_code=status_code)
+        with pytest.raises(exception):
+            account.fetch_transaction_report_for_period(
+                datetime.date(2023, 1, 1),
+                datetime.date(2023, 1, 1),
+                fio_banka.TransactionReportFmt.JSON,
+            )
