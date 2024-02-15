@@ -31,7 +31,6 @@ Homepage = "https://github.com/peberanek/fio-banka"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=fio_banka --cov-report term-missing"
 
 [tool.ruff]
 # Configuration: https://docs.astral.sh/ruff/configuration/
