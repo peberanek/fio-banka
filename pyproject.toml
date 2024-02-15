@@ -6,11 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "fio_banka"
 dynamic = ["version"]
 authors = [{ name = "Petr Beranek", email = "petrberanek.mail@gmail.com" }]
-description = "Fio Banka API Client"
+description = "Fio Banka API"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-keywords = ["finance", "fio", "bank", "api", "czech", "wrapper"]
+keywords = ["finance", "fio", "bank", "api", "czech"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -84,7 +84,7 @@ select = [
 ]
 
 ignore = [
-    # Conflicting formatter rules (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
+  # Conflicting formatter rules (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
   "W191",
   "E111",
   "E114",
