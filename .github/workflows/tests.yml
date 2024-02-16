@@ -13,8 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pipenv build
-          # Not using `--deploy` here. Updates should be handled by a bot.
-          pipenv install --dev
+          pipenv sync --dev
       - name: Build package
         # The `build` pkg is not installed in the virtualenv.
         run: python3 -m build

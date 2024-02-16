@@ -20,11 +20,8 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pipenv build
-          # Not using `--deploy` here. Updates should be handled by a bot.
-          pipenv install --dev
+          python3 -m pip install --upgrade build
       - name: Build package
-        # The `build` pkg is not installed in the virtualenv.
         run: python3 -m build
       - name: Upload packages
         uses: actions/upload-artifact@v4
