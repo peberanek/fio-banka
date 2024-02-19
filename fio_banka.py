@@ -240,9 +240,8 @@ class Account:
 
     @staticmethod
     def _check_fmt(fmt: _Fmt, fmt_type: type[_Fmt]) -> None:
-        formats = [i.value for i in fmt_type]
-        if fmt not in fmt_type:
-            raise ValueError(f"Invalid format: '{fmt}'; available formats: {formats}")
+        if not isinstance(fmt, fmt_type):
+            raise TypeError(f"Invalid type: `fmt` must be a member of {fmt_type.__name__} enum")
 
     def _request_transaction_report(self, url: str, fmt: TransactionReportFmt) -> str:
         self._check_fmt(fmt, TransactionReportFmt)
