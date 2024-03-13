@@ -12,6 +12,7 @@ Notes:
     * Tests of `AccountInfo` and `Transaction` objects are covered by `Account`
         tests.
 """
+
 import datetime
 import decimal
 import os
