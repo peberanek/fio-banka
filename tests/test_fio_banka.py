@@ -60,7 +60,7 @@ def test_exceptions_are_present():
 
 
 class TestAccount:
-    BASE_URL = "https://www.fio.cz/ib_api/rest"
+    BASE_URL = "https://fioapi.fio.cz/v1/rest"
     TOKEN = "testTokenXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36"
 
     @pytest.fixture()

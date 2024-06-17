@@ -190,7 +190,7 @@ def _parse_json(data: str):
 class Account:
     """Client for interaction with an account."""
 
-    _BASE_URL = "https://www.fio.cz/ib_api/rest"
+    _BASE_URL = "https://fioapi.fio.cz/v1/rest"
     _TOKEN_LEN = 64
     # https://requests.readthedocs.io/en/latest/user/advanced/#timeouts
     # It's a good practice to set connect timeouts to slightly larger than
