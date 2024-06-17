@@ -60,7 +60,7 @@ def test_exceptions_are_present():
 
 
 class TestAccount:
-    BASE_URL = "https://www.fio.cz/ib_api/rest"
+    BASE_URL = "https://fioapi.fio.cz/v1/rest"
     TOKEN = "testTokenXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36"
 
     @pytest.fixture()
@@ -127,17 +127,16 @@ class TestAccount:
             )
 
     @staticmethod
-    @pytest.mark.parametrize("fmt", ["", "foo"], ids=["empty", "invalid"])
     def test_fetch_transaction_report_for_period_with_invalid_format(
-        account: fio_banka.Account, fmt: str, requests_mock: _requests_mock.Mocker
+        account: fio_banka.Account, requests_mock: _requests_mock.Mocker
     ):
         """Test that an invalid or unsupported data format is refused."""
         requests_mock.get(_requests_mock.ANY)
-        with pytest.raises(ValueError, match="Invalid format"):
+        with pytest.raises(TypeError, match="Invalid type"):
             account.fetch_transaction_report_for_period(
                 datetime.date(2023, 1, 1),
                 datetime.date(2023, 1, 1),
-                fmt,  # type: ignore[reportArgumentType,arg-type]
+                "foo",  # type: ignore[reportArgumentType,arg-type]
             )
 
     @pytest.mark.parametrize(
@@ -179,16 +178,13 @@ class TestAccount:
             account.fetch_account_statement(2023, -1, fio_banka.AccountStatementFmt.JSON)
 
     @staticmethod
-    @pytest.mark.parametrize("fmt", ["", "bar"], ids=["empty", "invalid"])
     def test_fetch_account_statement_with_invalid_format(
-        account: fio_banka.Account,
-        requests_mock: _requests_mock.Mocker,
-        fmt: str,
+        account: fio_banka.Account, requests_mock: _requests_mock.Mocker
     ):
         """Test that an invalid or unsupported data format is refused."""
         requests_mock.get(_requests_mock.ANY)
-        with pytest.raises(ValueError, match="Invalid format"):
-            account.fetch_account_statement(2023, 1, fmt)  # type: ignore[reportArgumentType,arg-type]
+        with pytest.raises(TypeError, match="Invalid type"):
+            account.fetch_account_statement(2023, 1, "bar")  # type: ignore[reportArgumentType,arg-type]
 
     @pytest.mark.parametrize(
         "fmt", [fio_banka.TransactionReportFmt.HTML, fio_banka.TransactionReportFmt.OFX]
