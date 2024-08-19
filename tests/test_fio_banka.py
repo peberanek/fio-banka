@@ -63,12 +63,12 @@ class TestAccount:
     BASE_URL = "https://fioapi.fio.cz/v1/rest"
     TOKEN = "testTokenXZVZPOJ4pMrdnPleaUcdUlqy2LqFFVqI4dagXgi1eB1cgLzNjwsWS36"
 
-    @pytest.fixture()
+    @pytest.fixture
     def account(self) -> fio_banka.Account:
         return fio_banka.Account(self.TOKEN)
 
     @staticmethod
-    @pytest.fixture()
+    @pytest.fixture
     def account_statement() -> str:
         this_dir = pathlib.Path(os.path.realpath(__file__)).parent
         with (this_dir / "account_statement.json").open("r") as f:
