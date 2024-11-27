@@ -25,6 +25,14 @@ classifiers = [
 # in sync.
 dependencies = ["requests~=2.31"]
 
+[dependency-groups]
+dev = [
+  "pre-commit~=4.0",
+  "pytest~=8.0",
+  "requests-mock~=1.11",
+  "types-requests~=2.31",
+]
+
 [project.urls]
 Homepage = "https://github.com/peberanek/fio-banka"
 

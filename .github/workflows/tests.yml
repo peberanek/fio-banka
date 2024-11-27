@@ -6,16 +6,15 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.5"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pipenv build
-          pipenv sync --dev
-      - name: Build package
-        # The `build` pkg is not installed in the virtualenv.
-        run: python3 -m build
+          python-version-file: "pyproject.toml"
+      - name: Install the project
+        run: uv sync --all-extras --dev
       - name: Run tests
-        run: pipenv run pytest
+        run: uv run pytest

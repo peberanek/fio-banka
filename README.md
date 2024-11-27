@@ -62,16 +62,16 @@ pip install fio-banka
 
 ## Contributing
 
-Set up development environment via [Pipenv](https://pipenv.pypa.io/en/latest/):
+Set up development environment via [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pipenv sync --dev
-pipenv run pre-commit install
+uv sync
+uv run pre-commit install
 ```
 
 Run tests:
 ```bash
-pytest
+uv run pytest
 ```
 
 Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).

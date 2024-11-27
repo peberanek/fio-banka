@@ -31,5 +31,5 @@ repos:
         name: pytest
         language: system
         pass_filenames: false
-        entry: pipenv run pytest
+        entry: uv run pytest
         stages: [pre-push]
