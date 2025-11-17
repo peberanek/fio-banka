@@ -28,7 +28,7 @@ dependencies = ["requests~=2.31"]
 [dependency-groups]
 dev = [
   "pre-commit~=4.0",
-  "pytest~=8.0",
+  "pytest~=9.0",
   "requests-mock~=1.11",
   "types-requests~=2.31",
 ]
