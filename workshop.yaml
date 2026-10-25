@@ -1,0 +1,10 @@
+name: fio-banka
+base: ubuntu@26.04
+sdks:
+  - name: vscode-remote
+  - name: opencode
+  - name: uv
+actions:
+  sync: uv sync
+  upgrade: uv lock --upgrade
+  opencode: opencode
